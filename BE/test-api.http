@@ -1,0 +1,136 @@
+### API Test File - Sử dụng với REST Client extension trong VS Code
+
+@baseUrl = http://localhost:3000/api
+@userId = user123
+
+### 1. Thêm thuốc mới - Paracetamol
+POST {{baseUrl}}/medicines
+Content-Type: application/json
+x-user-id: {{userId}}
+
+{
+  "name": "Paracetamol",
+  "barcode": "8934567890123",
+  "dosage": "500mg",
+  "form": "Viên nén",
+  "note": "Uống sau ăn 30 phút",
+  "stock_quantity": 20,
+  "stock_unit": "viên",
+  "low_stock_threshold": 5
+}
+
+### 2. Thêm thuốc - Amoxicillin
+POST {{baseUrl}}/medicines
+Content-Type: application/json
+x-user-id: {{userId}}
+
+{
+  "name": "Amoxicillin",
+  "barcode": "8934567890456",
+  "dosage": "250mg",
+  "form": "Viên nang",
+  "note": "Kháng sinh - Uống đủ liệu trình 7 ngày",
+  "stock_quantity": 30,
+  "stock_unit": "viên",
+  "low_stock_threshold": 10
+}
+
+### 3. Thêm thuốc - Vitamin C (minimal)
+POST {{baseUrl}}/medicines
+Content-Type: application/json
+x-user-id: {{userId}}
+
+{
+  "name": "Vitamin C"
+}
+
+### 4. Thêm thuốc - Ibuprofen
+POST {{baseUrl}}/medicines
+Content-Type: application/json
+x-user-id: {{userId}}
+
+{
+  "name": "Ibuprofen",
+  "dosage": "400mg",
+  "form": "Viên nén",
+  "note": "Thuốc giảm đau, hạ sốt. Uống sau ăn",
+  "stock_quantity": 24,
+  "stock_unit": "viên",
+  "low_stock_threshold": 6
+}
+
+### 5. Thêm thuốc - Prospan (Siro ho)
+POST {{baseUrl}}/medicines
+Content-Type: application/json
+x-user-id: {{userId}}
+
+{
+  "name": "Prospan",
+  "dosage": "5ml",
+  "form": "Siro",
+  "note": "Thuốc ho long đờm. Lắc đều trước khi dùng",
+  "stock_quantity": 2,
+  "stock_unit": "chai",
+  "low_stock_threshold": 1
+}
+
+### 6. Lấy danh sách tất cả thuốc
+GET {{baseUrl}}/medicines
+x-user-id: {{userId}}
+
+### 7. Lấy danh sách thuốc (có tìm kiếm)
+GET {{baseUrl}}/medicines?search=para
+x-user-id: {{userId}}
+
+### 8. Lấy danh sách thuốc (sắp xếp theo tên)
+GET {{baseUrl}}/medicines?sortBy=name&order=ASC
+x-user-id: {{userId}}
+
+### 9. Lấy chi tiết thuốc (thay 1 bằng ID thực tế)
+GET {{baseUrl}}/medicines/1
+x-user-id: {{userId}}
+
+### 10. Cập nhật thông tin thuốc (thay 1 bằng ID thực tế)
+PUT {{baseUrl}}/medicines/1
+Content-Type: application/json
+x-user-id: {{userId}}
+
+{
+  "name": "Paracetamol 500mg",
+  "barcode": "8934567890123",
+  "dosage": "500mg",
+  "form": "Viên nén bao phim",
+  "note": "Uống sau ăn 30 phút. Không quá 4g/ngày",
+  "stock_quantity": 15,
+  "stock_unit": "viên",
+  "low_stock_threshold": 5
+}
+
+### 11. Cập nhật tồn kho (thay 1 bằng ID thực tế)
+PATCH {{baseUrl}}/medicines/1/stock
+Content-Type: application/json
+x-user-id: {{userId}}
+
+{
+  "stock_quantity": 10
+}
+
+### 12. Lấy danh sách thuốc sắp hết
+GET {{baseUrl}}/medicines/low-stock
+x-user-id: {{userId}}
+
+### 13. Xóa thuốc (thay 1 bằng ID thực tế)
+DELETE {{baseUrl}}/medicines/1
+x-user-id: {{userId}}
+
+### 14. Test không có authentication (sẽ lỗi 401)
+GET {{baseUrl}}/medicines
+
+### 15. Test thêm thuốc không có tên (sẽ lỗi 400)
+POST {{baseUrl}}/medicines
+Content-Type: application/json
+x-user-id: {{userId}}
+
+{
+  "dosage": "500mg"
+}

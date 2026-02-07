@@ -1,0 +1,151 @@
+{
+  "CREATE_SCHEDULE_DAILY": {
+    "description": "Tạo lịch uống thuốc hàng ngày",
+    "method": "POST",
+    "url": "http://localhost:3000/api/schedules",
+    "headers": {
+      "Content-Type": "application/json",
+      "x-user-id": "user123"
+    },
+    "body": {
+      "medicine_id": 1,
+      "start_date": "2024-02-07",
+      "end_date": "2024-02-14",
+      "time_of_day": "08:00:00",
+      "rule_type": "daily",
+      "dose_amount": 1
+    }
+  },
+  
+  "CREATE_SCHEDULE_EVERY_X_DAYS": {
+    "description": "Tạo lịch uống thuốc mỗi 3 ngày",
+    "method": "POST",
+    "url": "http://localhost:3000/api/schedules",
+    "headers": {
+      "Content-Type": "application/json",
+      "x-user-id": "user123"
+    },
+    "body": {
+      "medicine_id": 2,
+      "start_date": "2024-02-07",
+      "end_date": "2024-03-07",
+      "time_of_day": "20:00:00",
+      "rule_type": "every_x_days",
+      "interval_days": 3,
+      "dose_amount": 2
+    }
+  },
+  
+  "CREATE_SCHEDULE_WEEKDAYS": {
+    "description": "Tạo lịch uống thuốc thứ 2, 4, 6",
+    "method": "POST",
+    "url": "http://localhost:3000/api/schedules",
+    "headers": {
+      "Content-Type": "application/json",
+      "x-user-id": "user123"
+    },
+    "body": {
+      "medicine_id": 3,
+      "start_date": "2024-02-07",
+      "time_of_day": "09:00:00",
+      "rule_type": "weekdays",
+      "weekdays": "1,3,5",
+      "dose_amount": 1
+    }
+  },
+  
+  "CREATE_SCHEDULE_NO_END_DATE": {
+    "description": "Tạo lịch không giới hạn thời gian (vitamin)",
+    "method": "POST",
+    "url": "http://localhost:3000/api/schedules",
+    "headers": {
+      "Content-Type": "application/json",
+      "x-user-id": "user123"
+    },
+    "body": {
+      "medicine_id": 2,
+      "start_date": "2024-02-07",
+      "time_of_day": "09:00:00",
+      "rule_type": "daily",
+      "dose_amount": 1
+    }
+  },
+  
+  "EXAMPLES": {
+    "kháng_sinh_7_ngày": {
+      "medicine_id": 1,
+      "start_date": "2024-02-07",
+      "end_date": "2024-02-13",
+      "time_of_day": "08:00:00",
+      "rule_type": "daily",
+      "dose_amount": 1,
+      "note": "Uống đủ 7 ngày"
+    },
+    
+    "thuốc_3_lần_ngày_sáng": {
+      "medicine_id": 1,
+      "start_date": "2024-02-07",
+      "end_date": "2024-02-14",
+      "time_of_day": "08:00:00",
+      "rule_type": "daily",
+      "dose_amount": 1
+    },
+    
+    "thuốc_3_lần_ngày_trưa": {
+      "medicine_id": 1,
+      "start_date": "2024-02-07",
+      "end_date": "2024-02-14",
+      "time_of_day": "12:00:00",
+      "rule_type": "daily",
+      "dose_amount": 1
+    },
+    
+    "thuốc_3_lần_ngày_tối": {
+      "medicine_id": 1,
+      "start_date": "2024-02-07",
+      "end_date": "2024-02-14",
+      "time_of_day": "20:00:00",
+      "rule_type": "daily",
+      "dose_amount": 1
+    },
+    
+    "vitamin_hàng_ngày": {
+      "medicine_id": 2,
+      "start_date": "2024-02-07",
+      "time_of_day": "09:00:00",
+      "rule_type": "daily",
+      "dose_amount": 1,
+      "note": "Không có ngày kết thúc"
+    },
+    
+    "thuốc_tiêm_mỗi_tuần": {
+      "medicine_id": 5,
+      "start_date": "2024-02-07",
+      "time_of_day": "14:00:00",
+      "rule_type": "every_x_days",
+      "interval_days": 7,
+      "dose_amount": 1,
+      "note": "Tiêm mỗi tuần"
+    },
+    
+    "thuốc_thứ_2_4_6": {
+      "medicine_id": 3,
+      "start_date": "2024-02-07",
+      "time_of_day": "09:00:00",
+      "rule_type": "weekdays",
+      "weekdays": "1,3,5",
+      "dose_amount": 1,
+      "note": "Thứ 2, 4, 6 hàng tuần"
+    },
+    
+    "thuốc_cuối_tuần": {
+      "medicine_id": 4,
+      "start_date": "2024-02-07",
+      "time_of_day": "10:00:00",
+      "rule_type": "weekdays",
+      "weekdays": "0,6",
+      "dose_amount": 1,
+      "note": "Chủ nhật và thứ 7"
+    }
+  }
+}
