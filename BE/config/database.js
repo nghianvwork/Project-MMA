@@ -10,7 +10,8 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  timezone: '+07:00' // Múi giờ Việt Nam
 });
 
 // Sử dụng promise wrapper để dễ dàng làm việc với async/await
@@ -22,7 +23,7 @@ pool.getConnection((err, connection) => {
     console.error('Lỗi kết nối database:', err.message);
     return;
   }
-  console.log('Kết nối MySQL thành công!');
+  console.log('✅ Kết nối MySQL thành công!');
   connection.release();
 });
 

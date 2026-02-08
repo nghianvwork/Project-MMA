@@ -1,0 +1,130 @@
+### API Test File - Lịch Uống Thuốc
+
+@baseUrl = http://localhost:3000/api
+@userId = user123
+
+### 1. Tạo lịch uống thuốc hàng ngày (Paracetamol - sáng)
+POST {{baseUrl}}/schedules
+Content-Type: application/json
+x-user-id: {{userId}}
+
+{
+  "medicine_id": 1,
+  "start_date": "2024-02-07",
+  "end_date": "2024-02-14",
+  "time_of_day": "08:00:00",
+  "rule_type": "daily",
+  "dose_amount": 1
+}
+
+### 2. Tạo lịch uống thuốc hàng ngày (Paracetamol - trưa)
+POST {{baseUrl}}/schedules
+Content-Type: application/json
+x-user-id: {{userId}}
+
+{
+  "medicine_id": 1,
+  "start_date": "2024-02-07",
+  "end_date": "2024-02-14",
+  "time_of_day": "12:00:00",
+  "rule_type": "daily",
+  "dose_amount": 1
+}
+
+### 3. Tạo lịch uống thuốc hàng ngày (Paracetamol - tối)
+POST {{baseUrl}}/schedules
+Content-Type: application/json
+x-user-id: {{userId}}
+
+{
+  "medicine_id": 1,
+  "start_date": "2024-02-07",
+  "end_date": "2024-02-14",
+  "time_of_day": "20:00:00",
+  "rule_type": "daily",
+  "dose_amount": 1
+}
+
+### 4. Tạo lịch uống vitamin hàng ngày (không giới hạn)
+POST {{baseUrl}}/schedules
+Content-Type: application/json
+x-user-id: {{userId}}
+
+{
+  "medicine_id": 2,
+  "start_date": "2024-02-07",
+  "time_of_day": "09:00:00",
+  "rule_type": "daily",
+  "dose_amount": 1
+}
+
+### 5. Tạo lịch uống thuốc mỗi 3 ngày
+POST {{baseUrl}}/schedules
+Content-Type: application/json
+x-user-id: {{userId}}
+
+{
+  "medicine_id": 3,
+  "start_date": "2024-02-07",
+  "end_date": "2024-03-07",
+  "time_of_day": "20:00:00",
+  "rule_type": "every_x_days",
+  "interval_days": 3,
+  "dose_amount": 2
+}
+
+### 6. Tạo lịch uống thuốc thứ 2, 4, 6
+POST {{baseUrl}}/schedules
+Content-Type: application/json
+x-user-id: {{userId}}
+
+{
+  "medicine_id": 4,
+  "start_date": "2024-02-07",
+  "time_of_day": "09:00:00",
+  "rule_type": "weekdays",
+  "weekdays": "1,3,5",
+  "dose_amount": 1
+}
+
+### 7. Lấy tất cả lịch uống thuốc
+GET {{baseUrl}}/schedules
+x-user-id: {{userId}}
+
+### 8. Lấy lịch theo thuốc cụ thể
+GET {{baseUrl}}/schedules?medicine_id=1
+x-user-id: {{userId}}
+
+### 9. Lấy lịch còn hiệu lực tại ngày cụ thể
+GET {{baseUrl}}/schedules?date=2024-02-10
+x-user-id: {{userId}}
+
+### 10. Lấy chi tiết một lịch
+GET {{baseUrl}}/schedules/1
+x-user-id: {{userId}}
+
+### 11. Lấy lịch uống thuốc theo ngày (có tính toán rule)
+GET {{baseUrl}}/schedules/date/2024-02-07
+x-user-id: {{userId}}
+
+### 12. Lấy lịch uống thuốc ngày thứ 2 (test weekdays)
+GET {{baseUrl}}/schedules/date/2024-02-12
+x-user-id: {{userId}}
+
+### 13. Cập nhật lịch
+PUT {{baseUrl}}/schedules/1
+Content-Type: application/json
+x-user-id: {{userId}}
+
+{
+  "medicine_id": 1,
+  "start_date": "2024-02-07",
+  "end_date": "2024-02-21",
+  "time_of_day": "08:30:00",
+  "rule_type": "daily",
+  "dose_amount": 2
+}
+
+### 14. Xóa lịch
+DELETE {{baseUrl}}/schedules/1
+x-user-id: {{userId}}

@@ -1,0 +1,135 @@
+{
+  "POST_CREATE_MEDICINE": {
+    "description": "Thêm thuốc mới vào tủ thuốc",
+    "method": "POST",
+    "url": "http://localhost:3000/api/medicines",
+    "headers": {
+      "Content-Type": "application/json",
+      "x-user-id": "user123"
+    },
+    "body": {
+      "name": "Paracetamol",
+      "barcode": "8934567890123",
+      "dosage": "500mg",
+      "form": "Viên nén",
+      "note": "Uống sau ăn 30 phút",
+      "stock_quantity": 20,
+      "stock_unit": "viên",
+      "low_stock_threshold": 5
+    }
+  },
+  
+  "POST_CREATE_MEDICINE_MINIMAL": {
+    "description": "Thêm thuốc với thông tin tối thiểu (chỉ cần tên)",
+    "method": "POST",
+    "url": "http://localhost:3000/api/medicines",
+    "headers": {
+      "Content-Type": "application/json",
+      "x-user-id": "user123"
+    },
+    "body": {
+      "name": "Vitamin C"
+    }
+  },
+  
+  "POST_CREATE_MEDICINE_FULL": {
+    "description": "Thêm thuốc với đầy đủ thông tin",
+    "method": "POST",
+    "url": "http://localhost:3000/api/medicines",
+    "headers": {
+      "Content-Type": "application/json",
+      "x-user-id": "user123"
+    },
+    "body": {
+      "name": "Amoxicillin",
+      "barcode": "8934567890456",
+      "dosage": "250mg",
+      "form": "Viên nang",
+      "note": "Kháng sinh - Uống đủ liệu trình 7 ngày. Không uống khi đói",
+      "stock_quantity": 30,
+      "stock_unit": "viên",
+      "low_stock_threshold": 10
+    }
+  },
+  
+  "PUT_UPDATE_MEDICINE": {
+    "description": "Cập nhật thông tin thuốc (thay :id bằng ID thực tế)",
+    "method": "PUT",
+    "url": "http://localhost:3000/api/medicines/1",
+    "headers": {
+      "Content-Type": "application/json",
+      "x-user-id": "user123"
+    },
+    "body": {
+      "name": "Paracetamol 500mg",
+      "barcode": "8934567890123",
+      "dosage": "500mg",
+      "form": "Viên nén bao phim",
+      "note": "Uống sau ăn 30 phút. Không quá 4g/ngày",
+      "stock_quantity": 15,
+      "stock_unit": "viên",
+      "low_stock_threshold": 5
+    }
+  },
+  
+  "PATCH_UPDATE_STOCK": {
+    "description": "Cập nhật số lượng tồn kho",
+    "method": "PATCH",
+    "url": "http://localhost:3000/api/medicines/1/stock",
+    "headers": {
+      "Content-Type": "application/json",
+      "x-user-id": "user123"
+    },
+    "body": {
+      "stock_quantity": 10
+    }
+  },
+  
+  "EXAMPLES": {
+    "thuoc_giam_dau": {
+      "name": "Ibuprofen",
+      "dosage": "400mg",
+      "form": "Viên nén",
+      "note": "Thuốc giảm đau, hạ sốt. Uống sau ăn",
+      "stock_quantity": 24,
+      "stock_unit": "viên",
+      "low_stock_threshold": 6
+    },
+    "thuoc_ho": {
+      "name": "Prospan",
+      "dosage": "5ml",
+      "form": "Siro",
+      "note": "Thuốc ho long đờm. Lắc đều trước khi dùng",
+      "stock_quantity": 2,
+      "stock_unit": "chai",
+      "low_stock_threshold": 1
+    },
+    "vitamin": {
+      "name": "Vitamin D3",
+      "dosage": "1000 IU",
+      "form": "Viên nang mềm",
+      "note": "Bổ sung vitamin D. Uống 1 viên/ngày",
+      "stock_quantity": 60,
+      "stock_unit": "viên",
+      "low_stock_threshold": 15
+    },
+    "thuoc_day": {
+      "name": "Omeprazole",
+      "dosage": "20mg",
+      "form": "Viên nang",
+      "note": "Thuốc dạ dày. Uống trước ăn sáng 30 phút",
+      "stock_quantity": 28,
+      "stock_unit": "viên",
+      "low_stock_threshold": 7
+    },
+    "thuoc_di_ung": {
+      "name": "Cetirizine",
+      "dosage": "10mg",
+      "form": "Viên nén",
+      "note": "Thuốc chống dị ứng. Uống trước khi ngủ",
+      "stock_quantity": 10,
+      "stock_unit": "viên",
+      "low_stock_threshold": 5
+    }
+  }
+}
