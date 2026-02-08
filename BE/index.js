@@ -3,10 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const swaggerUi = require('swagger-ui-express');
-const swaggerDocument = require('./swagger.json'); // File chứa cấu hình API của bạn
+const swaggerDocument = require('./swagger');
 
-// Phục vụ giao diện Swagger tại đường dẫn /swagger-ui
-app.use('/swagger-ui', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 // Import routes
 const medicineRoutes = require('./routes/medicineRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
@@ -22,14 +20,25 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Routes
 app.get('/', (req, res) => {
   res.json({
-    message: 'Medicine Management API',
+    message: 'Medicine Management API 💊',
     version: '1.0.0',
+    description: 'API quản lý tủ thuốc và lịch uống thuốc',
     endpoints: {
       medicines: '/api/medicines',
-      schedules: '/api/schedules'
+      schedules: '/api/schedules',
+      documentation: '/api-docs'
     }
   });
 });
+
+// Swagger UI với custom options
+const swaggerOptions = {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Medicine Management API - Documentation',
+  customfavIcon: '/favicon.ico'
+};
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerOptions));
 
 app.use('/api/medicines', medicineRoutes);
 app.use('/api/schedules', scheduleRoutes);
@@ -54,8 +63,12 @@ app.use((req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`);
-  console.log(`📚 API Documentation: http://localhost:${PORT}/api/medicines`);
+  console.log(`\n🚀 Server đang chạy tại http://localhost:${PORT}`);
+  console.log(`\n📚 Swagger UI Documentation:`);
+  console.log(`   👉 http://localhost:${PORT}/api-docs`);
+  console.log(`\n📖 API Endpoints:`);
+  console.log(`   🏥 Medicines: http://localhost:${PORT}/api/medicines`);
+  console.log(`   📅 Schedules: http://localhost:${PORT}/api/schedules\n`);
 });
 
 module.exports = app;
