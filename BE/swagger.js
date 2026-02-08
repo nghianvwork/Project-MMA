@@ -35,6 +35,10 @@ Tất cả API yêu cầu header \`x-user-id\` để xác thực user.
   },
   servers: [
     {
+      url: 'https://your-app.onrender.com',
+      description: 'Production server (Render)'
+    },
+    {
       url: 'http://localhost:3000',
       description: 'Development server'
     }
