@@ -2,7 +2,11 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./swagger.json'); // File chứa cấu hình API của bạn
 
+// Phục vụ giao diện Swagger tại đường dẫn /swagger-ui
+app.use('/swagger-ui', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 // Import routes
 const medicineRoutes = require('./routes/medicineRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
