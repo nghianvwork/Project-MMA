@@ -4,6 +4,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const swaggerUi = require('swagger-ui-express');
 const getServerUrl = require('./utils/getServerUrl');
+const userRoutes = require("./routes/userRoutes");
 
 // Import swagger config và cập nhật server URL
 const swaggerDocument = require('./swagger');
@@ -52,6 +53,7 @@ app.get('/', (req, res) => {
   });
 });
 
+app.use("/api/user", userRoutes);
 app.use('/api/medicines', medicineRoutes);
 app.use('/api/schedules', scheduleRoutes);
 
