@@ -48,9 +48,32 @@ app.get('/', (req, res) => {
     endpoints: {
       medicines: '/api/medicines',
       schedules: '/api/schedules',
-      documentation: '/api-docs'
+      documentation: '/api-docs',
+      health: '/health'
     }
   });
+});
+
+// Health check endpoint
+app.get('/health', async (req, res) => {
+  try {
+    const db = require('./config/database');
+    await db.query('SELECT 1');
+    res.json({
+      status: 'OK',
+      database: 'Connected',
+      environment: process.env.NODE_ENV || 'development',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Health check failed:', error);
+    res.status(500).json({
+      status: 'ERROR',
+      database: 'Disconnected',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 app.use("/api/user", userRoutes);
