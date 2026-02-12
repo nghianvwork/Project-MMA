@@ -2,8 +2,9 @@ services:
   - type: web
     name: medicine-api
     env: node
-    buildCommand: npm install
-    startCommand: npm start
+    runtime: node
+    buildCommand: npm ci
+    startCommand: node index.js
     envVars:
       - key: NODE_ENV
         value: production
@@ -16,4 +17,6 @@ services:
       - key: DB_PASSWORD
         sync: false
       - key: DB_NAME
+        sync: false
+      - key: JWT_SECRET
         sync: false
