@@ -292,6 +292,32 @@ Ví dụ: Authorization: Bearer <your_token>
       },
     },
 
+    "/api/user/google-login": {
+      post: {
+        tags: ["User"],
+        summary: "Đăng nhập bằng Google",
+        description: "Nhận Google idToken từ mobile, verify và trả JWT hệ thống",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  idToken: { type: "string" },
+                },
+                required: ["idToken"],
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: "Google login thành công" },
+          401: { description: "Google token không hợp lệ" },
+        },
+      },
+    },
+
     "/api/medicines": {
       get: {
         tags: ["Medicines"],
