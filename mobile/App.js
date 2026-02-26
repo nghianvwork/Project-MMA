@@ -1,7 +1,7 @@
 import { useState } from "react";
 import ForgotPasswordScreen from "./src/screens/ForgotPasswordScreen";
-import HomeScreen from "./src/screens/HomeScreen";
 import LoginScreen from "./src/screens/LoginScreen";
+import ProfileScreen from "./src/screens/ProfileScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
 import ResetPasswordScreen from "./src/screens/ResetPasswordScreen";
 import ResetSuccessScreen from "./src/screens/ResetSuccessScreen";
@@ -35,7 +35,16 @@ export default function App() {
   }
 
   if (screen === "home") {
-    return <HomeScreen session={session} />;
+    return (
+      <ProfileScreen
+        session={session}
+        onBack={() => setScreen("welcome")}
+        onLogout={() => {
+          setSession(null);
+          setScreen("login");
+        }}
+      />
+    );
   }
 
   if (screen === "forgot-password") {
