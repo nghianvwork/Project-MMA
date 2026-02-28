@@ -297,7 +297,7 @@ exports.getProfile = async (req, res) => {
     const userId = req.user.id;
 
     const [rows] = await db.query(
-      "SELECT id, email, display_name, dob, photo_url, created_at FROM users WHERE id = ?",
+      "SELECT id, email, display_name, dob, gender, height_cm, weight_kg, photo_url, created_at FROM users WHERE id = ?",
       [userId],
     );
 

@@ -49,11 +49,11 @@ export default function WelcomeScreen({ onJoinNow, onLogin }) {
 
             <View style={styles.heroVisualWrap}>
               <View style={styles.heroPhone}>
-                <Ionicons name="phone-portrait-outline" size={96} color="#d5e4eb" />
+                <Ionicons name="phone-portrait-outline" size={66} color="#d5e4eb" />
                 <View style={styles.heroMedicalBadge}>
                   <MaterialCommunityIcons
                     name="medical-bag"
-                    size={20}
+                    size={14}
                     color="#16d8c3"
                   />
                 </View>
@@ -71,7 +71,7 @@ export default function WelcomeScreen({ onJoinNow, onLogin }) {
             {FEATURES.map((item) => (
               <View key={item.title} style={styles.featureCard}>
                 <View style={styles.featureIconWrap}>
-                  <Ionicons name={item.icon} size={22} color="#0a7469" />
+                  <Ionicons name={item.icon} size={18} color="#0a7469" />
                 </View>
                 <View style={styles.featureTextWrap}>
                   <Text style={styles.featureTitle}>{item.title}</Text>
@@ -102,7 +102,6 @@ const styles = StyleSheet.create({
   phoneFrame: {
     flex: 1,
     width: "100%",
-    maxWidth: 420,
     alignSelf: "center",
     backgroundColor: "#f4f6f8",
   },
@@ -110,68 +109,68 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 28,
+    paddingHorizontal: 10,
+    paddingTop: 8,
+    paddingBottom: 22,
   },
   heroCard: {
-    height: 430,
-    borderRadius: 16,
+    height: 330,
+    borderRadius: 14,
     backgroundColor: "#2b8f91",
     overflow: "hidden",
-    paddingHorizontal: 22,
-    paddingTop: 24,
+    paddingHorizontal: 14,
+    paddingTop: 16,
     justifyContent: "space-between",
   },
   heroCircleTop: {
     position: "absolute",
-    width: 320,
-    height: 320,
-    borderRadius: 160,
+    width: 250,
+    height: 250,
+    borderRadius: 125,
     backgroundColor: "rgba(123, 242, 230, 0.18)",
-    top: -130,
-    right: -140,
+    top: -95,
+    right: -95,
   },
   heroCircleBottom: {
     position: "absolute",
-    width: 280,
-    height: 280,
-    borderRadius: 140,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
     backgroundColor: "rgba(9, 54, 57, 0.36)",
-    bottom: -130,
-    left: -90,
+    bottom: -95,
+    left: -70,
   },
   badge: {
     alignSelf: "flex-start",
     borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     backgroundColor: "#18dcc5",
   },
   badgeText: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: "800",
     color: "#053e3e",
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   heroTitle: {
-    marginTop: 14,
-    fontSize: 49,
-    lineHeight: 56,
+    marginTop: 10,
+    fontSize: 27,
+    lineHeight: 34,
     fontWeight: "800",
     color: "#f8ffff",
-    maxWidth: 330,
+    maxWidth: 230,
   },
   heroVisualWrap: {
-    height: 180,
-    marginBottom: 10,
+    height: 125,
+    marginBottom: 8,
     justifyContent: "center",
     alignItems: "center",
   },
   heroPhone: {
-    width: 170,
-    height: 170,
-    borderRadius: 90,
+    width: 118,
+    height: 118,
+    borderRadius: 59,
     backgroundColor: "rgba(17, 87, 90, 0.55)",
     alignItems: "center",
     justifyContent: "center",
@@ -180,11 +179,11 @@ const styles = StyleSheet.create({
   },
   heroMedicalBadge: {
     position: "absolute",
-    top: 58,
-    right: 48,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    top: 39,
+    right: 33,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
@@ -196,60 +195,60 @@ const styles = StyleSheet.create({
   },
   handEmoji: {
     position: "absolute",
-    right: 58,
+    right: 36,
     bottom: 0,
-    fontSize: 42,
+    fontSize: 28,
   },
   bodyText: {
-    marginTop: 26,
+    marginTop: 18,
     textAlign: "center",
-    fontSize: 21,
-    lineHeight: 34,
+    fontSize: 14,
+    lineHeight: 22,
     color: "#2a4766",
-    paddingHorizontal: 16,
+    paddingHorizontal: 10,
   },
   featureList: {
-    marginTop: 16,
-    gap: 12,
+    marginTop: 12,
+    gap: 9,
   },
   featureCard: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#eefbfa",
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#bce9e4",
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
   },
   featureIconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     backgroundColor: "#18ddc5",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
+    marginRight: 10,
   },
   featureTextWrap: {
     flex: 1,
   },
   featureTitle: {
-    fontSize: 30,
-    lineHeight: 36,
+    fontSize: 12,
+    lineHeight: 17,
     fontWeight: "700",
     color: "#10233f",
   },
   featureDescription: {
-    marginTop: 2,
-    fontSize: 22,
-    lineHeight: 28,
+    marginTop: 1,
+    fontSize: 11,
+    lineHeight: 15,
     color: "#5f7086",
   },
   primaryButton: {
-    marginTop: 18,
-    height: 58,
-    borderRadius: 14,
+    marginTop: 14,
+    height: 50,
+    borderRadius: 12,
     backgroundColor: "#1dd8c7",
     alignItems: "center",
     justifyContent: "center",
@@ -260,15 +259,15 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   primaryButtonText: {
-    fontSize: 24,
-    lineHeight: 30,
+    fontSize: 18,
+    lineHeight: 24,
     fontWeight: "700",
     color: "#07363d",
   },
   secondaryButton: {
-    marginTop: 12,
-    height: 58,
-    borderRadius: 14,
+    marginTop: 10,
+    height: 50,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#dde4ec",
     backgroundColor: "#ffffff",
@@ -276,8 +275,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   secondaryButtonText: {
-    fontSize: 24,
-    lineHeight: 30,
+    fontSize: 18,
+    lineHeight: 24,
     fontWeight: "700",
     color: "#1d2f4b",
   },

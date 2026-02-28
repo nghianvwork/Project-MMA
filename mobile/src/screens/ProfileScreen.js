@@ -3,7 +3,6 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -13,34 +12,87 @@ import {
 } from "react-native";
 import { requestJsonWithFallback } from "../utils/apiClient";
 
-const ACCOUNT_ITEMS = [
+const EMPTY_PROFILE = {
+  displayName: "",
+  age: "",
+  gender: "",
+  bloodType: "",
+  bloodPressure: "",
+  heightCm: "",
+  weightKg: "",
+};
+
+const FAMILY_MEMBERS = [
   {
-    key: "health-profile",
-    icon: "card-account-details-outline",
-    label: "Hồ sơ sức khỏe",
+    key: "me",
+    label: "Tôi",
+    icon: "person-outline",
+    active: true,
+    bg: "#2c8e62",
+    iconColor: "#ffffff",
   },
   {
-    key: "caretaker",
-    icon: "account-group-outline",
-    label: "Người thân (Caretaker Mode)",
+    key: "father",
+    label: "Bố",
+    icon: "man-outline",
+    active: false,
+    bg: "#e3edff",
+    iconColor: "#7a90d4",
   },
   {
-    key: "history",
-    icon: "history",
-    label: "Lịch sử uống thuốc",
+    key: "mother",
+    label: "Mẹ",
+    icon: "woman-outline",
+    active: false,
+    bg: "#f7e8f1",
+    iconColor: "#d07ca7",
+  },
+  {
+    key: "child",
+    label: "Con",
+    icon: "happy-outline",
+    active: false,
+    bg: "#fbead8",
+    iconColor: "#e5a05e",
+  },
+  {
+    key: "other",
+    label: "Khác",
+    icon: "people-outline",
+    active: false,
+    bg: "#eef1f5",
+    iconColor: "#9fa8b5",
   },
 ];
 
-const APP_ITEMS = [
+const SETTING_ITEMS = [
+  {
+    key: "health_profile",
+    title: "Hồ sơ sức khỏe",
+    icon: "shield-checkmark-outline",
+    bg: "#edf6ef",
+    iconColor: "#1fa36c",
+  },
+  {
+    key: "medicine_history",
+    title: "Lịch sử uống thuốc",
+    icon: "calendar-outline",
+    bg: "#fff1e6",
+    iconColor: "#ff8f3f",
+  },
   {
     key: "notifications",
-    icon: "bell-outline",
-    label: "Cài đặt thông báo",
+    title: "Cài đặt thông báo",
+    icon: "notifications-outline",
+    bg: "#f0eaff",
+    iconColor: "#9b63f2",
   },
   {
     key: "security",
-    icon: "shield-check-outline",
-    label: "Bảo mật",
+    title: "Bảo mật",
+    icon: "shield-half-outline",
+    bg: "#ffe9eb",
+    iconColor: "#f35b67",
   },
 ];
 
@@ -54,7 +106,6 @@ const decodeJwtPayload = (token) => {
     if (!payloadPart) {
       return {};
     }
-
     const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
     const padding = base64.length % 4;
     const padded = padding ? `${base64}${"=".repeat(4 - padding)}` : base64;
@@ -65,89 +116,114 @@ const decodeJwtPayload = (token) => {
   }
 };
 
-const extractNameFromEmail = (emailValue) => {
-  if (!emailValue) {
-    return "Người dùng";
+const toTextOrEmpty = (value) => {
+  if (value === null || value === undefined) {
+    return "";
   }
-  return String(emailValue).split("@")[0] || "Người dùng";
+  return String(value).trim();
 };
 
-const toYearText = (createdAt) => {
-  if (!createdAt) {
+const toNumberTextOrEmpty = (value) => {
+  if (value === null || value === undefined || value === "") {
     return "";
   }
 
-  const date = new Date(createdAt);
-  if (Number.isNaN(date.getTime())) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return "";
+  }
+  return String(parsed);
+};
+
+const getAgeFromDob = (dobValue) => {
+  if (!dobValue) {
     return "";
   }
 
-  return String(date.getFullYear());
+  const dob = new Date(dobValue);
+  if (Number.isNaN(dob.getTime())) {
+    return "";
+  }
+
+  const now = new Date();
+  let age = now.getFullYear() - dob.getFullYear();
+  const monthDiff = now.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) {
+    age -= 1;
+  }
+
+  return age >= 0 ? age : "";
 };
 
-const normalizeProfileData = (profileData, session) => {
-  const tokenPayload = decodeJwtPayload(session?.token || "");
-  const sessionUser = session?.user || {};
-  const fallbackEmail =
-    sessionUser.email || session?.email || tokenPayload?.email || "";
+const toGenderText = (genderValue) => {
+  const normalized = String(genderValue || "").trim().toLowerCase();
+  if (normalized === "nam" || normalized === "male") {
+    return "Nam";
+  }
+  if (normalized === "nữ" || normalized === "nu" || normalized === "female") {
+    return "Nữ";
+  }
+  if (normalized === "khác" || normalized === "khac" || normalized === "other") {
+    return "Khác";
+  }
+  return "";
+};
 
-  const displayName =
-    profileData?.display_name ||
-    sessionUser.display_name ||
-    extractNameFromEmail(fallbackEmail);
+const toBloodPressureText = (profileData) => {
+  const directValue = toTextOrEmpty(profileData?.blood_pressure);
+  if (directValue) {
+    return directValue;
+  }
+
+  const systolic = toTextOrEmpty(profileData?.blood_pressure_systolic);
+  const diastolic = toTextOrEmpty(profileData?.blood_pressure_diastolic);
+  if (systolic && diastolic) {
+    return `${systolic}/${diastolic}`;
+  }
+  return "";
+};
+
+const normalizeProfileData = (profileData) => {
+  if (!profileData || typeof profileData !== "object") {
+    return { ...EMPTY_PROFILE };
+  }
 
   return {
-    displayName,
-    email: profileData?.email || fallbackEmail,
-    photoUrl: profileData?.photo_url || sessionUser.photo_url || "",
-    createdAt: profileData?.created_at || "",
+    displayName: toTextOrEmpty(profileData?.display_name),
+    age: getAgeFromDob(profileData?.dob),
+    gender: toGenderText(profileData?.gender),
+    bloodType: toTextOrEmpty(profileData?.blood_type),
+    bloodPressure: toBloodPressureText(profileData),
+    heightCm: toNumberTextOrEmpty(profileData?.height_cm),
+    weightKg: toNumberTextOrEmpty(profileData?.weight_kg),
   };
 };
 
-function ProfileMenuSection({ title, items }) {
-  return (
-    <View style={styles.sectionWrap}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <View style={styles.menuCard}>
-        {items.map((item, index) => (
-          <View key={item.key}>
-            <Pressable style={styles.menuItem}>
-              <View style={styles.menuIconWrap}>
-                <MaterialCommunityIcons
-                  name={item.icon}
-                  size={18}
-                  color="#20d8c4"
-                />
-              </View>
-              <Text style={styles.menuLabel}>{item.label}</Text>
-              <Ionicons name="chevron-forward" size={18} color="#9da8b9" />
-            </Pressable>
-            {index < items.length - 1 ? <View style={styles.menuDivider} /> : null}
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-export default function ProfileScreen({ session, onBack, onLogout }) {
+export default function ProfileScreen({ session }) {
   const [loading, setLoading] = useState(true);
   const [errorText, setErrorText] = useState("");
-  const [profile, setProfile] = useState(() => normalizeProfileData(null, session));
+  const [profile, setProfile] = useState({ ...EMPTY_PROFILE });
+  const [historyStats, setHistoryStats] = useState({
+    scheduleTotal: 0,
+    medicineTotal: 0,
+  });
 
   const token = session?.token || process.env.EXPO_PUBLIC_AUTH_TOKEN || "";
+  const tokenPayload = useMemo(() => decodeJwtPayload(token), [token]);
+  const userId = session?.user?.id || tokenPayload?.id || "";
 
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
 
-    const loadProfile = async () => {
+    const fetchProfile = async () => {
       setLoading(true);
       setErrorText("");
 
       if (!token) {
-        if (isMounted) {
-          setProfile(normalizeProfileData(null, session));
-          setErrorText("Chưa có token đăng nhập. Hiển thị dữ liệu tạm.");
+        if (mounted) {
+          setProfile({ ...EMPTY_PROFILE });
+          setHistoryStats({ scheduleTotal: 0, medicineTotal: 0 });
+          setErrorText("Chưa có token đăng nhập.");
           setLoading(false);
         }
         return;
@@ -160,111 +236,206 @@ export default function ProfileScreen({ session, onBack, onLogout }) {
           },
         });
 
-        if (!isMounted) {
+        if (!mounted) {
           return;
         }
 
         if (!response.ok) {
-          setProfile(normalizeProfileData(null, session));
+          setProfile({ ...EMPTY_PROFILE });
+          setHistoryStats({ scheduleTotal: 0, medicineTotal: 0 });
           setErrorText(data.message || "Không tải được hồ sơ từ backend.");
           setLoading(false);
           return;
         }
 
-        setProfile(normalizeProfileData(data, session));
+        setProfile(normalizeProfileData(data));
+
+        if (userId) {
+          try {
+            const headers = { "x-user-id": userId };
+            const [medicineResult, scheduleResult] = await Promise.all([
+              requestJsonWithFallback("/api/medicines", { headers }),
+              requestJsonWithFallback("/api/schedules", { headers }),
+            ]);
+
+            if (!mounted) {
+              return;
+            }
+
+            setHistoryStats({
+              medicineTotal:
+                medicineResult.response.ok && Number.isFinite(Number(medicineResult.data?.total))
+                  ? Number(medicineResult.data.total)
+                  : 0,
+              scheduleTotal:
+                scheduleResult.response.ok && Number.isFinite(Number(scheduleResult.data?.total))
+                  ? Number(scheduleResult.data.total)
+                  : 0,
+            });
+          } catch (_historyError) {
+            if (mounted) {
+              setHistoryStats({ scheduleTotal: 0, medicineTotal: 0 });
+            }
+          }
+        } else {
+          setHistoryStats({ scheduleTotal: 0, medicineTotal: 0 });
+        }
+
         setLoading(false);
       } catch (_error) {
-        if (!isMounted) {
+        if (!mounted) {
           return;
         }
-        setProfile(normalizeProfileData(null, session));
-        setErrorText("Không thể kết nối backend để tải hồ sơ.");
+
+        setProfile({ ...EMPTY_PROFILE });
+        setHistoryStats({ scheduleTotal: 0, medicineTotal: 0 });
+        setErrorText("Không thể kết nối backend để lấy hồ sơ.");
         setLoading(false);
       }
     };
 
-    loadProfile();
+    fetchProfile();
 
     return () => {
-      isMounted = false;
+      mounted = false;
     };
-  }, [session, token]);
+  }, [token, userId]);
 
-  const memberYear = useMemo(() => toYearText(profile.createdAt), [profile.createdAt]);
+  const identityText = useMemo(() => {
+    const segments = [];
+    if (profile.age !== "") {
+      segments.push(`${profile.age} tuổi`);
+    }
+    if (profile.gender) {
+      segments.push(profile.gender);
+    }
+    if (profile.bloodType) {
+      segments.push(`Nhóm máu ${profile.bloodType}`);
+    }
+    return segments.join(" • ");
+  }, [profile.age, profile.gender, profile.bloodType]);
+
+  const scheduleHintText = historyStats.scheduleTotal > 0 ? `${historyStats.scheduleTotal} lịch` : "";
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
       <View style={styles.phoneFrame}>
-        <View style={styles.topBar}>
-          <Pressable style={styles.backButton} onPress={() => onBack?.()}>
-            <Ionicons name="arrow-back" size={21} color="#22314a" />
-          </Pressable>
-          <Text style={styles.topTitle}>Hồ sơ Cá nhân</Text>
-          <View style={styles.topSpacer} />
-        </View>
-
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.profileHeaderCard}>
-            <View style={styles.avatarBorder}>
-              {profile.photoUrl ? (
-                <Image source={{ uri: profile.photoUrl }} style={styles.avatar} />
-              ) : (
-                <View style={styles.avatarFallback}>
-                  <Ionicons name="person" size={38} color="#7ca8a2" />
-                </View>
-              )}
-              <View style={styles.cameraBadge}>
-                <Ionicons name="camera-outline" size={11} color="#ffffff" />
-              </View>
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={styles.screenTitle}>Hồ sơ Cá nhân</Text>
+              <Text style={styles.screenSubtitle}>Quản lý tài khoản & gia đình</Text>
+            </View>
+            <Pressable style={styles.circleButton}>
+              <Ionicons name="settings-outline" size={18} color="#607086" />
+            </Pressable>
+          </View>
+
+          <View style={styles.profileCard}>
+            <View style={styles.avatarWrap}>
+              <Ionicons name="person-outline" size={24} color="#247a59" />
+              <View style={styles.avatarDot} />
             </View>
 
-            <Text style={styles.nameText}>{profile.displayName}</Text>
+            <View style={styles.profileBody}>
+              <View style={styles.nameRow}>
+                <Text style={styles.nameText}>{profile.displayName}</Text>
+                
+              </View>
+              {identityText ? <Text style={styles.metaText}>{identityText}</Text> : null}
+            </View>
 
-
-
-            <Text style={styles.memberText}>
-              {memberYear ? `Thành viên từ ${memberYear}` : "Thành viên MedTrack"}
-            </Text>
-
-            {!!errorText && <Text style={styles.errorText}>{errorText}</Text>}
+            <Pressable style={styles.editPill}>
+              <Ionicons name="create-outline" size={16} color="#1f8d63" />
+            </Pressable>
           </View>
+
+          {!!errorText && <Text style={styles.errorText}>{errorText}</Text>}
 
           {loading ? (
             <View style={styles.loadingWrap}>
-              <ActivityIndicator size="large" color="#20d8c4" />
-              <Text style={styles.loadingText}>Đang tải hồ sơ từ backend...</Text>
+              <ActivityIndicator color="#21c97d" />
+              <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
             </View>
           ) : null}
 
-          <ProfileMenuSection title="QUẢN LÝ TÀI KHOẢN" items={ACCOUNT_ITEMS} />
-          <ProfileMenuSection title="ỨNG DỤNG" items={APP_ITEMS} />
+          <View style={styles.sectionHead}>
+            <Text style={styles.sectionTitle}>HỒ SƠ GIA ĐÌNH</Text>
+            <Pressable style={styles.addButton}>
+              <Ionicons name="add-circle-outline" size={14} color="#3b9c6f" />
+              <Text style={styles.addText}>Thêm mới</Text>
+            </Pressable>
+          </View>
 
-          <Pressable style={styles.logoutButton} onPress={() => onLogout?.()}>
-            <MaterialCommunityIcons name="logout" size={17} color="#ff4f57" />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.familyRow}
+          >
+            {FAMILY_MEMBERS.map((item) => (
+              <View key={item.key} style={styles.familyItem}>
+                <View
+                  style={[
+                    styles.familyAvatar,
+                    item.active && styles.familyAvatarActive,
+                    { backgroundColor: item.bg },
+                  ]}
+                >
+                  <Ionicons name={item.icon} size={18} color={item.iconColor} />
+                </View>
+                <Text style={[styles.familyLabel, item.active && styles.familyLabelActive]}>
+                  {item.label}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+
+          <Text style={styles.sectionTitle}>THÔNG TIN & CÀI ĐẶT</Text>
+
+          <View style={styles.settingsWrap}>
+            {SETTING_ITEMS.map((item, index) => (
+              <View key={item.key}>
+                <Pressable style={styles.settingItem}>
+                  <View style={[styles.settingIconWrap, { backgroundColor: item.bg }]}>
+                    <Ionicons name={item.icon} size={18} color={item.iconColor} />
+                  </View>
+                  <Text style={styles.settingText}>{item.title}</Text>
+                  {item.key === "medicine_history" && scheduleHintText ? (
+                    <Text style={styles.settingHint}>{scheduleHintText}</Text>
+                  ) : null}
+                  <Ionicons name="chevron-forward" size={18} color="#96a2b4" />
+                </Pressable>
+                {index < SETTING_ITEMS.length - 1 ? <View style={styles.settingDivider} /> : null}
+              </View>
+            ))}
+          </View>
+
+          <Pressable style={styles.logoutButton}>
+            <MaterialCommunityIcons name="logout" size={17} color="#ef4e4e" />
             <Text style={styles.logoutText}>Đăng xuất</Text>
           </Pressable>
         </ScrollView>
 
         <View style={styles.tabBar}>
           <Pressable style={styles.tabItem}>
-            <Ionicons name="home-outline" size={19} color="#a8b3c3" />
+            <Ionicons name="home-outline" size={19} color="#a6b0c1" />
             <Text style={styles.tabText}>Trang chủ</Text>
           </Pressable>
           <Pressable style={styles.tabItem}>
-            <Ionicons name="calendar-outline" size={19} color="#a8b3c3" />
-            <Text style={styles.tabText}>Lịch nhắc</Text>
+            <Ionicons name="calendar-outline" size={19} color="#a6b0c1" />
+            <Text style={styles.tabText}>Lịch hẹn</Text>
           </Pressable>
           <Pressable style={styles.tabItem}>
-            <Ionicons name="bar-chart-outline" size={19} color="#a8b3c3" />
-            <Text style={styles.tabText}>Báo cáo</Text>
+            <Ionicons name="medkit-outline" size={19} color="#a6b0c1" />
+            <Text style={styles.tabText}>Tủ thuốc</Text>
           </Pressable>
           <Pressable style={styles.tabItem}>
-            <Ionicons name="person-outline" size={19} color="#24d8c4" />
+            <Ionicons name="person" size={19} color="#1f9d66" />
             <Text style={[styles.tabText, styles.tabTextActive]}>Cá nhân</Text>
           </Pressable>
         </View>
@@ -276,190 +447,242 @@ export default function ProfileScreen({ session, onBack, onLogout }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#eff2f5",
+    backgroundColor: "#f2f4f6",
   },
   phoneFrame: {
     flex: 1,
     width: "100%",
-    maxWidth: 420,
     alignSelf: "center",
-    backgroundColor: "#eff2f5",
-  },
-  topBar: {
-    height: 54,
-    paddingHorizontal: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e3e8ee",
-    backgroundColor: "#ffffff",
-  },
-  backButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  topTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#16223a",
-  },
-  topSpacer: {
-    width: 32,
+    backgroundColor: "#f2f4f6",
   },
   scroll: {
     flex: 1,
   },
   content: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingTop: 12,
-    paddingBottom: 98,
+    paddingBottom: 108,
   },
-  profileHeaderCard: {
+  headerRow: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
+    justifyContent: "space-between",
   },
-  avatarBorder: {
-    width: 102,
-    height: 102,
-    borderRadius: 51,
-    borderWidth: 2,
-    borderColor: "#b7ece6",
-    alignItems: "center",
-    justifyContent: "center",
+  screenTitle: {
+    fontSize: 38,
+    lineHeight: 44,
+    fontWeight: "800",
+    color: "#11223d",
+  },
+  screenSubtitle: {
+    marginTop: 3,
+    fontSize: 15,
+    color: "#74859c",
+  },
+  circleButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: "#ffffff",
-  },
-  avatar: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-  },
-  avatarFallback: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    backgroundColor: "#deefe8",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#000000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  cameraBadge: {
+  profileCard: {
+    marginTop: 14,
+    borderRadius: 20,
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  avatarWrap: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#e8f3ec",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  avatarDot: {
     position: "absolute",
-    right: -2,
-    bottom: 8,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#20d8c4",
-    alignItems: "center",
-    justifyContent: "center",
+    right: -1,
+    bottom: -1,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#35c770",
     borderWidth: 2,
     borderColor: "#ffffff",
   },
+  profileBody: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   nameText: {
-    marginTop: 12,
-    fontSize: 31,
+    fontSize: 32,
     lineHeight: 38,
     fontWeight: "700",
-    color: "#15243d",
+    color: "#172740",
+    maxWidth: "78%",
   },
-  premiumChip: {
-    marginTop: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "#e6fbf8",
-  },
-  premiumChipText: {
-    color: "#26b9a9",
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  memberText: {
-    marginTop: 8,
-    color: "#97a3b6",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  errorText: {
-    marginTop: 8,
-    color: "#e55058",
-    fontSize: 13,
-    textAlign: "center",
-  },
-  loadingWrap: {
-    backgroundColor: "#ffffff",
-    borderRadius: 14,
-    paddingVertical: 18,
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  loadingText: {
-    marginTop: 8,
-    color: "#6f7d92",
-    fontSize: 13,
-  },
-  sectionWrap: {
-    marginTop: 8,
-  },
-  sectionTitle: {
-    marginBottom: 8,
-    marginLeft: 4,
-    color: "#8895a8",
-    fontSize: 14,
-    fontWeight: "700",
-    letterSpacing: 0.4,
-  },
-  menuCard: {
-    borderRadius: 14,
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 10,
-  },
-  menuItem: {
-    minHeight: 60,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  menuIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 9,
-    backgroundColor: "#ecfaf8",
+  ownerBadge: {
+    height: 20,
+    paddingHorizontal: 7,
+    borderRadius: 10,
+    backgroundColor: "#d5f7ec",
     alignItems: "center",
     justifyContent: "center",
   },
-  menuLabel: {
+  ownerBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#239a6d",
+    letterSpacing: 0.4,
+  },
+  metaText: {
+    marginTop: 3,
+    fontSize: 14,
+    color: "#7888a0",
+  },
+  editPill: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#edf8f1",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  errorText: {
+    marginTop: 8,
+    color: "#e24f56",
+    fontSize: 14,
+  },
+  loadingWrap: {
+    marginTop: 8,
+    borderRadius: 14,
+    backgroundColor: "#ffffff",
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 7,
+    fontSize: 13,
+    color: "#73859b",
+  },
+  sectionHead: {
+    marginTop: 16,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  sectionTitle: {
+    color: "#7d8ca2",
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 0.7,
+  },
+  addButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  addText: {
+    color: "#3b9c6f",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  familyRow: {
+    gap: 14,
+    paddingBottom: 6,
+  },
+  familyItem: {
+    alignItems: "center",
+    minWidth: 48,
+  },
+  familyAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  familyAvatarActive: {
+    borderWidth: 2,
+    borderColor: "#2c8e62",
+  },
+  familyLabel: {
+    marginTop: 5,
+    fontSize: 12,
+    color: "#96a3b6",
+  },
+  familyLabelActive: {
+    color: "#2c8e62",
+    fontWeight: "700",
+  },
+  settingsWrap: {
+    marginTop: 10,
+    borderRadius: 16,
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 12,
+  },
+  settingItem: {
+    minHeight: 62,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+  },
+  settingIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  settingText: {
     flex: 1,
-    color: "#1d2b44",
+    color: "#1e2c44",
     fontSize: 17,
     fontWeight: "600",
   },
-  menuDivider: {
+  settingHint: {
+    marginRight: 4,
+    color: "#8f9bb0",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  settingDivider: {
     height: 1,
     backgroundColor: "#edf1f6",
-    marginLeft: 44,
+    marginLeft: 40,
   },
   logoutButton: {
-    marginTop: 16,
-    borderRadius: 12,
+    marginTop: 18,
+    height: 56,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#f0d8d8",
-    backgroundColor: "#fff4f4",
-    height: 52,
+    borderColor: "#f2dadb",
+    backgroundColor: "#fff3f3",
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
     gap: 8,
   },
   logoutText: {
-    color: "#ff4f57",
-    fontSize: 25,
+    color: "#ef4e4e",
+    fontSize: 18,
     fontWeight: "700",
   },
   tabBar: {
@@ -467,9 +690,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: 74,
+    height: 82,
     borderTopWidth: 1,
-    borderTopColor: "#e4e9ef",
+    borderTopColor: "#e2e8ef",
     backgroundColor: "#ffffff",
     flexDirection: "row",
   },
@@ -480,11 +703,12 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   tabText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#a8b3c3",
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#a6b0c1",
   },
   tabTextActive: {
-    color: "#24d8c4",
+    color: "#1f9d66",
+    fontWeight: "700",
   },
 });
