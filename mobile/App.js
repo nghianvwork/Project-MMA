@@ -1,20 +1,154 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import 'react-native-gesture-handler';
+import React from 'react';
+import { StatusBar, StyleSheet, Platform } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
+import { Ionicons } from '@expo/vector-icons';
+
+// Screens
+import HomeScreen from './src/screens/HomeScreen';
+import ScheduleScreen from './src/screens/ScheduleScreen';
+import MedicineListScreen from './src/screens/MedicineListScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+import AddMedicineScreen from './src/screens/AddMedicineScreen';
+import AddScheduleScreen from './src/screens/AddScheduleScreen';
+import AlarmScreen from './src/screens/AlarmScreen';
+
+// Theme
+import { COLORS, SIZES, FONTS } from './src/theme/theme';
+
+const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
+
+// ─── Stack Navigators for each tab ───────────────────────
+
+function HomeStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="HomeMain" component={HomeScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function ScheduleStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="ScheduleMain" component={ScheduleScreen} />
+      <Stack.Screen name="AddSchedule" component={AddScheduleScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function MedicineStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MedicineList" component={MedicineListScreen} />
+      <Stack.Screen name="AddMedicine" component={AddMedicineScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function ProfileStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="ProfileMain" component={ProfileScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// ─── Tab Icon Component ──────────────────────────────────
+
+const TAB_ICONS = {
+  HomeTab: { active: 'home', inactive: 'home-outline' },
+  ScheduleTab: { active: 'calendar', inactive: 'calendar-outline' },
+  MedicineTab: { active: 'medkit', inactive: 'medkit-outline' },
+  ProfileTab: { active: 'person', inactive: 'person-outline' },
+};
+
+// ─── Main App ────────────────────────────────────────────
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+
+        {/* Root Stack: Tabs + Modal screens */}
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="MainTabs" component={MainTabs} />
+          <Stack.Screen
+            name="Alarm"
+            component={AlarmScreen}
+            options={{ presentation: 'modal' }}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SafeAreaProvider>
+  );
+}
+
+function MainTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarIcon: ({ focused, color, size }) => {
+          const icons = TAB_ICONS[route.name];
+          const iconName = focused ? icons.active : icons.inactive;
+          return <Ionicons name={iconName} size={24} color={color} />;
+        },
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.tabInactive,
+        tabBarStyle: styles.tabBar,
+        tabBarLabelStyle: styles.tabLabel,
+        tabBarItemStyle: styles.tabItem,
+      })}
+    >
+      <Tab.Screen
+        name="HomeTab"
+        component={HomeStack}
+        options={{ tabBarLabel: 'Trang chủ' }}
+      />
+      <Tab.Screen
+        name="ScheduleTab"
+        component={ScheduleStack}
+        options={{ tabBarLabel: 'Lịch' }}
+      />
+      <Tab.Screen
+        name="MedicineTab"
+        component={MedicineStack}
+        options={{ tabBarLabel: 'Kho thuốc' }}
+      />
+      <Tab.Screen
+        name="ProfileTab"
+        component={ProfileStack}
+        options={{ tabBarLabel: 'Cá nhân' }}
+      />
+    </Tab.Navigator>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+  tabBar: {
+    height: SIZES.tabBarHeight,
+    backgroundColor: COLORS.surface,
+    borderTopWidth: 0,
+    paddingTop: 8,
+    paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  tabLabel: {
+    fontSize: 11,
+    ...FONTS.medium,
+    marginTop: 2,
+  },
+  tabItem: {
+    paddingTop: 4,
   },
 });
