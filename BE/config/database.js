@@ -20,10 +20,15 @@ const promisePool = pool.promise();
 // Test kết nối
 pool.getConnection((err, connection) => {
   if (err) {
-    console.error('Lỗi kết nối database:', err.message);
+    console.error('❌ Lỗi kết nối database:', err.message);
+    console.error('📍 DB_HOST:', process.env.DB_HOST);
+    console.error('📍 DB_USER:', process.env.DB_USER);
+    console.error('📍 DB_NAME:', process.env.DB_NAME);
+    console.error('📍 DB_PORT:', process.env.DB_PORT);
     return;
   }
   console.log('✅ Kết nối MySQL thành công!');
+  console.log('📍 Connected to:', process.env.DB_HOST);
   connection.release();
 });
 
