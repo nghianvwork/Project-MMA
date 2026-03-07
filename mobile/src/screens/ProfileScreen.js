@@ -1,13 +1,56 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    StatusBar,
+    StatusBar, Alert, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../theme/theme';
+import { getProfile } from '../api/userApi';
 
-const ProfileScreen = ({ navigation }) => {
+const ProfileScreen = ({ navigation, route }) => {
+    const session = route.params?.session;
+    const onLogout = route.params?.onLogout;
+    const [profile, setProfile] = useState(null);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const loadProfile = async () => {
+        if (!session?.token) return;
+        try {
+            const res = await getProfile(session.token);
+            setProfile(res);
+        } catch (error) {
+            console.log('Error loading profile:', error);
+        }
+    };
+
+    useFocusEffect(
+        useCallback(() => {
+            loadProfile();
+        }, [session?.token])
+    );
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await loadProfile();
+        setRefreshing(false);
+    };
+
+    const handleLogout = () => {
+        Alert.alert('Đăng xuất', 'Bạn có chắc muốn đăng xuất?', [
+            { text: 'Hủy', style: 'cancel' },
+            {
+                text: 'Đăng xuất',
+                style: 'destructive',
+                onPress: () => onLogout?.(),
+            },
+        ]);
+    };
+
+    const displayName = profile?.display_name || session?.user?.display_name || session?.email || 'Người dùng';
+    const displayEmail = profile?.email || session?.user?.email || session?.email || '';
+
     const menuItems = [
         { icon: 'person-outline', label: 'Thông tin cá nhân', color: COLORS.primary },
         { icon: 'notifications-outline', label: 'Cài đặt thông báo', color: COLORS.warning },
@@ -21,7 +64,11 @@ const ProfileScreen = ({ navigation }) => {
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
+            >
                 {/* Header */}
                 <View style={styles.header}>
                     <Text style={styles.title}>Cá nhân</Text>
@@ -33,8 +80,8 @@ const ProfileScreen = ({ navigation }) => {
                         <Ionicons name="person" size={36} color={COLORS.primary} />
                     </View>
                     <View style={styles.avatarInfo}>
-                        <Text style={styles.userName}>Người dùng</Text>
-                        <Text style={styles.userId}>ID: user123</Text>
+                        <Text style={styles.userName}>{displayName}</Text>
+                        <Text style={styles.userId}>{displayEmail}</Text>
                     </View>
                     <TouchableOpacity style={styles.editBtn}>
                         <Ionicons name="create-outline" size={20} color={COLORS.primary} />
@@ -59,7 +106,7 @@ const ProfileScreen = ({ navigation }) => {
                 </View>
 
                 {/* Logout */}
-                <TouchableOpacity style={styles.logoutBtn}>
+                <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
                     <Ionicons name="log-out-outline" size={20} color={COLORS.danger} />
                     <Text style={styles.logoutText}>Đăng xuất</Text>
                 </TouchableOpacity>
