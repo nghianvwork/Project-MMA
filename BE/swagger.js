@@ -47,17 +47,35 @@ Ví dụ: Authorization: Bearer <your_token>
   tags: [
     {
       name: "Medicines",
-      description:
-        "🏥 API quản lý tủ thuốc - Thêm, sửa, xóa thuốc và quản lý tồn kho",
+      description: "API quan ly tu thuoc",
     },
     {
       name: "Schedules",
-      description:
-        "📅 API quản lý lịch uống thuốc - Tạo và quản lý lịch uống thuốc",
+      description: "API quan ly lich uong thuoc",
     },
     {
       name: "User",
-      description: "🔐 API đăng ký và đăng nhập",
+      description: "API dang ky va dang nhap",
+    },
+    {
+      name: "Family",
+      description: "API quan ly ho so gia dinh",
+    },
+    {
+      name: "Health",
+      description: "API quan ly ho so suc khoe",
+    },
+    {
+      name: "MedicationLogs",
+      description: "API lich su uong thuoc",
+    },
+    {
+      name: "Notifications",
+      description: "API cai dat thong bao",
+    },
+    {
+      name: "Access",
+      description: "API quyen truy cap du lieu",
     },
   ],
   components: {
@@ -100,6 +118,81 @@ Ví dụ: Authorization: Bearer <your_token>
             example: "2024-02-14",
             nullable: true,
           },
+      FamilyMember: {
+        type: "object",
+        properties: {
+          id: { type: "integer", example: 1 },
+          user_id: { type: "string", example: "user123" },
+          name: { type: "string", example: "Minh Nguyen" },
+          relation: { type: "string", example: "father" },
+          dob: { type: "string", format: "date", example: "1970-01-15" },
+          gender: { type: "string", example: "Nam" },
+          blood_type: { type: "string", example: "A+" },
+          blood_pressure: { type: "string", example: "120/80" },
+          height_cm: { type: "number", example: 175 },
+          weight_kg: { type: "number", example: 70 },
+          photo_url: { type: "string", example: "https://..." },
+          is_primary: { type: "integer", example: 1 },
+          created_at: { type: "string", format: "date-time" },
+        },
+      },
+      HealthRecord: {
+        type: "object",
+        properties: {
+          id: { type: "integer", example: 1 },
+          user_id: { type: "string", example: "user123" },
+          member_id: { type: "integer", example: 2 },
+          category: { type: "string", example: "allergy" },
+          title: { type: "string", example: "Di ung Paracetamol" },
+          description: { type: "string", example: "Phan ung man" },
+          diagnosed_date: { type: "string", format: "date", example: "2020-05-01" },
+          hospital: { type: "string", example: "BV Da khoa" },
+          severity: { type: "string", example: "nang" },
+          created_at: { type: "string", format: "date-time" },
+        },
+      },
+      MedicationLog: {
+        type: "object",
+        properties: {
+          id: { type: "integer", example: 1 },
+          user_id: { type: "string", example: "user123" },
+          member_id: { type: "integer", example: 2 },
+          schedule_id: { type: "integer", example: 5 },
+          medicine_id: { type: "integer", example: 3 },
+          planned_time: { type: "string", format: "date-time", example: "2024-02-07T08:00:00" },
+          taken_time: { type: "string", format: "date-time", example: "2024-02-07T08:05:00" },
+          status: { type: "string", example: "taken" },
+          note: { type: "string", example: "Dung gio" },
+          created_at: { type: "string", format: "date-time" },
+        },
+      },
+      NotificationSettings: {
+        type: "object",
+        properties: {
+          user_id: { type: "string", example: "user123" },
+          remind_medicine: { type: "integer", example: 1 },
+          sound: { type: "integer", example: 1 },
+          vibrate: { type: "integer", example: 1 },
+          low_stock_alert: { type: "integer", example: 1 },
+          family_alert: { type: "integer", example: 1 },
+          system_alert: { type: "integer", example: 1 },
+          quiet_hours_enabled: { type: "integer", example: 0 },
+          quiet_start: { type: "string", example: "22:00:00" },
+          quiet_end: { type: "string", example: "06:00:00" },
+        },
+      },
+      AccessGrant: {
+        type: "object",
+        properties: {
+          id: { type: "integer", example: 1 },
+          user_id: { type: "string", example: "user123" },
+          member_id: { type: "integer", example: 2 },
+          grantee_email: { type: "string", example: "relative@gmail.com" },
+          permission_level: { type: "string", example: "read" },
+          status: { type: "string", example: "pending" },
+          created_at: { type: "string", format: "date-time" },
+        },
+      },
           time_of_day: { type: "string", format: "time", example: "08:00:00" },
           rule_type: {
             type: "string",
@@ -145,11 +238,57 @@ Ví dụ: Authorization: Bearer <your_token>
       },
     },
 
+    "/api/user/verify-reset-otp": {
+      post: {
+        tags: ["User"],
+        summary: "Xác thực OTP - lấy reset token từ email",
+        description: "Nhập OTP 6 số nhận được từ email để lấy reset token",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  email: {
+                    type: "string",
+                    example: "user@gmail.com",
+                  },
+                  otp: {
+                    type: "string",
+                    example: "123456",
+                  },
+                },
+                required: ["email", "otp"],
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "OTP verified",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: { type: "string", example: "OTP verified" },
+                    reset_token: { type: "string", example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." },
+                  },
+                },
+              },
+            },
+          },
+          400: { description: "Invalid or expired OTP" },
+        },
+      },
+    },
+
     "/api/user/reset-password": {
       post: {
         tags: ["User"],
         summary: "Đặt lại mật khẩu",
-        description: "Reset mật khẩu bằng token nhận được từ email",
+        description: "Reset mật khẩu bằng token nhận được từ verify OTP",
         requestBody: {
           required: true,
           content: {
@@ -161,12 +300,12 @@ Ví dụ: Authorization: Bearer <your_token>
                     type: "string",
                     example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                   },
-                  new_password: {
+                  newPassword: {
                     type: "string",
-                    example: "12345678",
+                    example: "password_moi_123",
                   },
                 },
-                required: ["token", "new_password"],
+                required: ["token", "newPassword"],
               },
             },
           },
@@ -576,9 +715,208 @@ Ví dụ: Authorization: Bearer <your_token>
             required: true,
             schema: { type: "string", format: "date", example: "2024-02-07" },
           },
+    "/api/family-members": {
+      get: {
+        tags: ["Family"],
+        summary: "Lay danh sach ho so gia dinh",
+        responses: { 200: { description: "Thanh cong" } },
+      },
+      post: {
+        tags: ["Family"],
+        summary: "Tao ho so gia dinh",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/FamilyMember" },
+            },
+          },
+        },
+        responses: { 201: { description: "Tao thanh cong" } },
+      },
+    },
+    "/api/family-members/{id}": {
+      get: {
+        tags: ["Family"],
+        summary: "Lay chi tiet ho so gia dinh",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+        responses: { 200: { description: "Thanh cong" } },
+      },
+      put: {
+        tags: ["Family"],
+        summary: "Cap nhat ho so gia dinh",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { $ref: "#/components/schemas/FamilyMember" } } },
+        },
+        responses: { 200: { description: "Cap nhat thanh cong" } },
+      },
+      delete: {
+        tags: ["Family"],
+        summary: "Xoa ho so gia dinh",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+        responses: { 200: { description: "Xoa thanh cong" } },
+      },
+    },
+    "/api/family-members/{id}/primary": {
+      patch: {
+        tags: ["Family"],
+        summary: "Dat ho so chinh",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+        responses: { 200: { description: "Thanh cong" } },
+      },
+    },
+    "/api/health-records": {
+      get: {
+        tags: ["Health"],
+        summary: "Lay ho so suc khoe",
+        parameters: [
+          { name: "member_id", in: "query", schema: { type: "integer" } },
+          { name: "category", in: "query", schema: { type: "string" } },
+        ],
+        responses: { 200: { description: "Thanh cong" } },
+      },
+      post: {
+        tags: ["Health"],
+        summary: "Tao ho so suc khoe",
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { $ref: "#/components/schemas/HealthRecord" } } },
+        },
+        responses: { 201: { description: "Tao thanh cong" } },
+      },
+    },
+    "/api/health-records/{id}": {
+      put: {
+        tags: ["Health"],
+        summary: "Cap nhat ho so suc khoe",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { $ref: "#/components/schemas/HealthRecord" } } },
+        },
+        responses: { 200: { description: "Cap nhat thanh cong" } },
+      },
+      delete: {
+        tags: ["Health"],
+        summary: "Xoa ho so suc khoe",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+        responses: { 200: { description: "Xoa thanh cong" } },
+      },
+    },
+    "/api/medication-logs": {
+      get: {
+        tags: ["MedicationLogs"],
+        summary: "Lay lich su uong thuoc",
+        parameters: [
+          { name: "member_id", in: "query", schema: { type: "integer" } },
+          { name: "status", in: "query", schema: { type: "string" } },
+          { name: "from", in: "query", schema: { type: "string" } },
+          { name: "to", in: "query", schema: { type: "string" } },
+        ],
+        responses: { 200: { description: "Thanh cong" } },
+      },
+      post: {
+        tags: ["MedicationLogs"],
+        summary: "Tao log uong thuoc",
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { $ref: "#/components/schemas/MedicationLog" } } },
+        },
+        responses: { 201: { description: "Tao thanh cong" } },
+      },
+    },
+    "/api/medication-logs/summary": {
+      get: {
+        tags: ["MedicationLogs"],
+        summary: "Thong ke uong thuoc",
+        parameters: [
+          { name: "member_id", in: "query", schema: { type: "integer" } },
+          { name: "from", in: "query", schema: { type: "string" } },
+          { name: "to", in: "query", schema: { type: "string" } },
+        ],
+        responses: { 200: { description: "Thanh cong" } },
+      },
+    },
+    "/api/medication-logs/{id}": {
+      put: {
+        tags: ["MedicationLogs"],
+        summary: "Cap nhat log uong thuoc",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { $ref: "#/components/schemas/MedicationLog" } } },
+        },
+        responses: { 200: { description: "Cap nhat thanh cong" } },
+      },
+      delete: {
+        tags: ["MedicationLogs"],
+        summary: "Xoa log uong thuoc",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+        responses: { 200: { description: "Xoa thanh cong" } },
+      },
+    },
+    "/api/notification-settings": {
+      get: {
+        tags: ["Notifications"],
+        summary: "Lay cai dat thong bao",
+        responses: { 200: { description: "Thanh cong" } },
+      },
+      put: {
+        tags: ["Notifications"],
+        summary: "Cap nhat cai dat thong bao",
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { $ref: "#/components/schemas/NotificationSettings" } } },
+        },
+        responses: { 200: { description: "Cap nhat thanh cong" } },
+      },
+    },
+    "/api/access-grants": {
+      get: {
+        tags: ["Access"],
+        summary: "Lay quyen truy cap du lieu",
+        parameters: [{ name: "member_id", in: "query", schema: { type: "integer" } }],
+        responses: { 200: { description: "Thanh cong" } },
+      },
+      post: {
+        tags: ["Access"],
+        summary: "Tao quyen truy cap du lieu",
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { $ref: "#/components/schemas/AccessGrant" } } },
+        },
+        responses: { 201: { description: "Tao thanh cong" } },
+      },
+    },
+    "/api/access-grants/{id}": {
+      put: {
+        tags: ["Access"],
+        summary: "Cap nhat quyen truy cap du lieu",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { $ref: "#/components/schemas/AccessGrant" } } },
+        },
+        responses: { 200: { description: "Cap nhat thanh cong" } },
+      },
+      delete: {
+        tags: ["Access"],
+        summary: "Xoa quyen truy cap du lieu",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+        responses: { 200: { description: "Xoa thanh cong" } },
+      },
+    },
         ],
         responses: { 200: { description: "Thành công" } },
       },
     },
   },
 };
+
+
+
+
+
+

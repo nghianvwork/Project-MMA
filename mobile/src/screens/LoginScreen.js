@@ -71,13 +71,15 @@ const envProjectNameForProxy = process.env.EXPO_PUBLIC_GOOGLE_PROXY_PROJECT_NAME
 const projectNameForProxy =
   envProjectNameForProxy || (expoOwner ? `@${expoOwner}/${expoSlug}` : "");
 
-const shouldUseGoogleProxy = Platform.OS !== "web";
+const isExpoGo = Constants?.appOwnership === "expo";
+const shouldUseGoogleProxy =
+  Platform.OS !== "web" && (isExpoGo || Boolean(envProjectNameForProxy));
 
 const makeProxyRedirectUri = () => {
-  const proxyOptions = { useProxy: true };
   if (projectNameForProxy) {
-    proxyOptions.projectNameForProxy = projectNameForProxy;
+    return normalizeWebRedirectUri(`https://auth.expo.io/${projectNameForProxy}`);
   }
+  const proxyOptions = { useProxy: true };
   return AuthSession.makeRedirectUri(proxyOptions);
 };
 
@@ -86,13 +88,11 @@ let googleRedirectUri = normalizeWebRedirectUri(
 );
 
 if (shouldUseGoogleProxy) {
-  try {
-    googleRedirectUri = makeProxyRedirectUri();
-  } catch (_error) {
-    googleRedirectUri = AuthSession.makeRedirectUri({
-      native: "mma-mobile:/oauthredirect",
-    });
-  }
+  googleRedirectUri = makeProxyRedirectUri();
+} else if (Platform.OS !== "web") {
+  googleRedirectUri = AuthSession.makeRedirectUri({
+    native: "mma-mobile:/oauthredirect",
+  });
 }
 
 if (__DEV__) {
@@ -133,6 +133,7 @@ export default function LoginScreen({
       webClientId:
         process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || configuredGoogleClientId,
       redirectUri: googleRedirectUri,
+      useProxy: shouldUseGoogleProxy,
     });
 
   const getExactRequestRedirectUri = () => {
