@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StatusBar, StyleSheet, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
@@ -27,6 +27,7 @@ import AlarmScreen from './src/screens/AlarmScreen';
 
 // Theme
 import { COLORS, SIZES, FONTS } from './src/theme/theme';
+import { setAuthToken } from './src/api/api';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -75,8 +76,18 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [resetFlow, setResetFlow] = useState({ email: '', resetToken: '' });
 
+  // Sync auth token with session (handles hot reload / re-render)
+  useEffect(() => {
+    if (session?.token) {
+      setAuthToken(session.token);
+    } else {
+      setAuthToken(null);
+    }
+  }, [session]);
+
   const handleLogout = () => {
     setSession(null);
+    setAuthToken(null);
     setScreen('welcome');
   };
 
@@ -104,7 +115,11 @@ export default function App() {
     return (
       <LoginScreen
         onLoginSuccess={(nextSession) => {
+          console.log('[App] Login success, token:', nextSession?.token ? 'received' : 'MISSING');
           setSession(nextSession || null);
+          if (nextSession?.token) {
+            setAuthToken(nextSession.token);
+          }
           setScreen('home');
         }}
         onForgotPassword={() => {

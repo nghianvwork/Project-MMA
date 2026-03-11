@@ -252,7 +252,7 @@ export default function ProfileScreen({ session }) {
 
         if (userId) {
           try {
-            const headers = { "x-user-id": userId };
+            const headers = { Authorization: `Bearer ${token}` };
             const [medicineResult, scheduleResult] = await Promise.all([
               requestJsonWithFallback("/api/medicines", { headers }),
               requestJsonWithFallback("/api/schedules", { headers }),
