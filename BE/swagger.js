@@ -59,23 +59,11 @@ Ví dụ: Authorization: Bearer <your_token>
     },
     {
       name: "Family",
-      description: "API quan ly ho so gia dinh",
-    },
-    {
-      name: "Health",
-      description: "API quan ly ho so suc khoe",
+      description: "API quan ly nguoi than",
     },
     {
       name: "MedicationLogs",
       description: "API lich su uong thuoc",
-    },
-    {
-      name: "Notifications",
-      description: "API cai dat thong bao",
-    },
-    {
-      name: "Access",
-      description: "API quyen truy cap du lieu",
     },
   ],
   components: {
@@ -89,65 +77,46 @@ Ví dụ: Authorization: Bearer <your_token>
     schemas: {
       Medicine: {
         type: "object",
-        required: ["name"],
         properties: {
           id: { type: "integer", example: 1 },
           user_id: { type: "string", example: "user123" },
           name: { type: "string", example: "Paracetamol" },
           barcode: { type: "string", example: "8934567890123" },
           dosage: { type: "string", example: "500mg" },
-          form: { type: "string", example: "Viên nén" },
-          note: { type: "string", example: "Uống sau ăn 30 phút" },
+          form: { type: "string", example: "Vien nen" },
+          note: { type: "string", example: "Uong sau an 30 phut" },
           stock_quantity: { type: "integer", example: 20 },
-          stock_unit: { type: "string", example: "viên" },
+          stock_unit: { type: "string", example: "vien" },
           low_stock_threshold: { type: "integer", example: 5 },
           created_at: { type: "string", format: "date-time" },
         },
       },
       Schedule: {
         type: "object",
-        required: ["medicine_id", "start_date", "time_of_day", "rule_type"],
         properties: {
           id: { type: "integer", example: 1 },
           user_id: { type: "string", example: "user123" },
           medicine_id: { type: "integer", example: 1 },
           start_date: { type: "string", format: "date", example: "2024-02-07" },
-          end_date: {
-            type: "string",
-            format: "date",
-            example: "2024-02-14",
-            nullable: true,
-          },
-      FamilyMember: {
-        type: "object",
-        properties: {
-          id: { type: "integer", example: 1 },
-          user_id: { type: "string", example: "user123" },
-          name: { type: "string", example: "Minh Nguyen" },
-          relation: { type: "string", example: "father" },
-          dob: { type: "string", format: "date", example: "1970-01-15" },
-          gender: { type: "string", example: "Nam" },
-          blood_type: { type: "string", example: "A+" },
-          blood_pressure: { type: "string", example: "120/80" },
-          height_cm: { type: "number", example: 175 },
-          weight_kg: { type: "number", example: 70 },
-          photo_url: { type: "string", example: "https://..." },
-          is_primary: { type: "integer", example: 1 },
+          end_date: { type: "string", format: "date", example: "2024-02-14", nullable: true },
+          time_of_day: { type: "string", format: "time", example: "08:00:00" },
+          rule_type: { type: "string", enum: ["daily", "every_x_days", "weekdays"], example: "daily" },
+          interval_days: { type: "integer", example: 3, nullable: true },
+          weekdays: { type: "string", example: "1,3,5", nullable: true },
+          dose_amount: { type: "number", example: 1 },
           created_at: { type: "string", format: "date-time" },
         },
       },
-      HealthRecord: {
+      Caregiver: {
         type: "object",
         properties: {
           id: { type: "integer", example: 1 },
-          user_id: { type: "string", example: "user123" },
-          member_id: { type: "integer", example: 2 },
-          category: { type: "string", example: "allergy" },
-          title: { type: "string", example: "Di ung Paracetamol" },
-          description: { type: "string", example: "Phan ung man" },
-          diagnosed_date: { type: "string", format: "date", example: "2020-05-01" },
-          hospital: { type: "string", example: "BV Da khoa" },
-          severity: { type: "string", example: "nang" },
+          patient_user_id: { type: "string", example: "user123" },
+          caregiver_user_id: { type: "string", example: "user456" },
+          permission: { type: "string", example: "view" },
+          caregiver_email: { type: "string", example: "caregiver@gmail.com" },
+          caregiver_name: { type: "string", example: "Nguyen Van B" },
+          photo_url: { type: "string", example: "https://..." },
           created_at: { type: "string", format: "date-time" },
         },
       },
@@ -156,52 +125,13 @@ Ví dụ: Authorization: Bearer <your_token>
         properties: {
           id: { type: "integer", example: 1 },
           user_id: { type: "string", example: "user123" },
-          member_id: { type: "integer", example: 2 },
           schedule_id: { type: "integer", example: 5 },
           medicine_id: { type: "integer", example: 3 },
-          planned_time: { type: "string", format: "date-time", example: "2024-02-07T08:00:00" },
+          scheduled_time: { type: "string", format: "date-time", example: "2024-02-07T08:00:00" },
           taken_time: { type: "string", format: "date-time", example: "2024-02-07T08:05:00" },
-          status: { type: "string", example: "taken" },
+          status: { type: "string", example: "taken_on_time" },
           note: { type: "string", example: "Dung gio" },
-          created_at: { type: "string", format: "date-time" },
-        },
-      },
-      NotificationSettings: {
-        type: "object",
-        properties: {
-          user_id: { type: "string", example: "user123" },
-          remind_medicine: { type: "integer", example: 1 },
-          sound: { type: "integer", example: 1 },
-          vibrate: { type: "integer", example: 1 },
-          low_stock_alert: { type: "integer", example: 1 },
-          family_alert: { type: "integer", example: 1 },
-          system_alert: { type: "integer", example: 1 },
-          quiet_hours_enabled: { type: "integer", example: 0 },
-          quiet_start: { type: "string", example: "22:00:00" },
-          quiet_end: { type: "string", example: "06:00:00" },
-        },
-      },
-      AccessGrant: {
-        type: "object",
-        properties: {
-          id: { type: "integer", example: 1 },
-          user_id: { type: "string", example: "user123" },
-          member_id: { type: "integer", example: 2 },
-          grantee_email: { type: "string", example: "relative@gmail.com" },
-          permission_level: { type: "string", example: "read" },
-          status: { type: "string", example: "pending" },
-          created_at: { type: "string", format: "date-time" },
-        },
-      },
-          time_of_day: { type: "string", format: "time", example: "08:00:00" },
-          rule_type: {
-            type: "string",
-            enum: ["daily", "every_x_days", "weekdays"],
-            example: "daily",
-          },
-          interval_days: { type: "integer", example: 3, nullable: true },
-          weekdays: { type: "string", example: "1,3,5", nullable: true },
-          dose_amount: { type: "number", example: 1 },
+          side_effect: { type: "string", example: "Buon non" },
           created_at: { type: "string", format: "date-time" },
         },
       },
@@ -715,6 +645,10 @@ Ví dụ: Authorization: Bearer <your_token>
             required: true,
             schema: { type: "string", format: "date", example: "2024-02-07" },
           },
+        ],
+        responses: { 200: { description: "ThÃ nh cÃ´ng" } },
+      },
+    },
     "/api/family-members": {
       get: {
         tags: ["Family"],
@@ -728,7 +662,7 @@ Ví dụ: Authorization: Bearer <your_token>
           required: true,
           content: {
             "application/json": {
-              schema: { $ref: "#/components/schemas/FamilyMember" },
+              schema: { $ref: "#/components/schemas/Caregiver" },
             },
           },
         },
@@ -748,7 +682,7 @@ Ví dụ: Authorization: Bearer <your_token>
         parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
         requestBody: {
           required: true,
-          content: { "application/json": { schema: { $ref: "#/components/schemas/FamilyMember" } } },
+          content: { "application/json": { schema: { $ref: "#/components/schemas/Caregiver" } } },
         },
         responses: { 200: { description: "Cap nhat thanh cong" } },
       },
@@ -759,58 +693,13 @@ Ví dụ: Authorization: Bearer <your_token>
         responses: { 200: { description: "Xoa thanh cong" } },
       },
     },
-    "/api/family-members/{id}/primary": {
-      patch: {
-        tags: ["Family"],
-        summary: "Dat ho so chinh",
-        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
-        responses: { 200: { description: "Thanh cong" } },
-      },
-    },
-    "/api/health-records": {
-      get: {
-        tags: ["Health"],
-        summary: "Lay ho so suc khoe",
-        parameters: [
-          { name: "member_id", in: "query", schema: { type: "integer" } },
-          { name: "category", in: "query", schema: { type: "string" } },
-        ],
-        responses: { 200: { description: "Thanh cong" } },
-      },
-      post: {
-        tags: ["Health"],
-        summary: "Tao ho so suc khoe",
-        requestBody: {
-          required: true,
-          content: { "application/json": { schema: { $ref: "#/components/schemas/HealthRecord" } } },
-        },
-        responses: { 201: { description: "Tao thanh cong" } },
-      },
-    },
-    "/api/health-records/{id}": {
-      put: {
-        tags: ["Health"],
-        summary: "Cap nhat ho so suc khoe",
-        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
-        requestBody: {
-          required: true,
-          content: { "application/json": { schema: { $ref: "#/components/schemas/HealthRecord" } } },
-        },
-        responses: { 200: { description: "Cap nhat thanh cong" } },
-      },
-      delete: {
-        tags: ["Health"],
-        summary: "Xoa ho so suc khoe",
-        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
-        responses: { 200: { description: "Xoa thanh cong" } },
-      },
-    },
     "/api/medication-logs": {
       get: {
         tags: ["MedicationLogs"],
         summary: "Lay lich su uong thuoc",
         parameters: [
-          { name: "member_id", in: "query", schema: { type: "integer" } },
+          { name: "schedule_id", in: "query", schema: { type: "integer" } },
+          { name: "medicine_id", in: "query", schema: { type: "integer" } },
           { name: "status", in: "query", schema: { type: "string" } },
           { name: "from", in: "query", schema: { type: "string" } },
           { name: "to", in: "query", schema: { type: "string" } },
@@ -832,7 +721,6 @@ Ví dụ: Authorization: Bearer <your_token>
         tags: ["MedicationLogs"],
         summary: "Thong ke uong thuoc",
         parameters: [
-          { name: "member_id", in: "query", schema: { type: "integer" } },
           { name: "from", in: "query", schema: { type: "string" } },
           { name: "to", in: "query", schema: { type: "string" } },
         ],
@@ -857,63 +745,15 @@ Ví dụ: Authorization: Bearer <your_token>
         responses: { 200: { description: "Xoa thanh cong" } },
       },
     },
-    "/api/notification-settings": {
-      get: {
-        tags: ["Notifications"],
-        summary: "Lay cai dat thong bao",
-        responses: { 200: { description: "Thanh cong" } },
-      },
-      put: {
-        tags: ["Notifications"],
-        summary: "Cap nhat cai dat thong bao",
-        requestBody: {
-          required: true,
-          content: { "application/json": { schema: { $ref: "#/components/schemas/NotificationSettings" } } },
-        },
-        responses: { 200: { description: "Cap nhat thanh cong" } },
-      },
-    },
-    "/api/access-grants": {
-      get: {
-        tags: ["Access"],
-        summary: "Lay quyen truy cap du lieu",
-        parameters: [{ name: "member_id", in: "query", schema: { type: "integer" } }],
-        responses: { 200: { description: "Thanh cong" } },
-      },
-      post: {
-        tags: ["Access"],
-        summary: "Tao quyen truy cap du lieu",
-        requestBody: {
-          required: true,
-          content: { "application/json": { schema: { $ref: "#/components/schemas/AccessGrant" } } },
-        },
-        responses: { 201: { description: "Tao thanh cong" } },
-      },
-    },
-    "/api/access-grants/{id}": {
-      put: {
-        tags: ["Access"],
-        summary: "Cap nhat quyen truy cap du lieu",
-        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
-        requestBody: {
-          required: true,
-          content: { "application/json": { schema: { $ref: "#/components/schemas/AccessGrant" } } },
-        },
-        responses: { 200: { description: "Cap nhat thanh cong" } },
-      },
-      delete: {
-        tags: ["Access"],
-        summary: "Xoa quyen truy cap du lieu",
-        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
-        responses: { 200: { description: "Xoa thanh cong" } },
-      },
-    },
-        ],
-        responses: { 200: { description: "Thành công" } },
-      },
-    },
   },
 };
+
+
+
+
+
+
+
 
 
 
