@@ -25,15 +25,15 @@ const ScheduleCard = ({ schedule, status = STATUS.PENDING, onTake, onSnooze, onP
         const parts = timeStr.split(':');
         const hour = parseInt(parts[0]);
         const min = parts[1];
-        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const ampm = hour >= 12 ? 'CH' : 'SA';
         const h = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
         return `${h.toString().padStart(2, '0')}:${min} ${ampm}`;
     };
 
     const getRuleLabel = () => {
         if (schedule.rule_type === 'daily') return null;
-        if (schedule.rule_type === 'every_x_days') return `Every ${schedule.interval_days} days`;
-        if (schedule.rule_type === 'weekdays') return 'Every other day';
+        if (schedule.rule_type === 'every_x_days') return `Mỗi ${schedule.interval_days} ngày`;
+        if (schedule.rule_type === 'weekdays') return 'Theo ngày trong tuần';
         return null;
     };
 
@@ -65,7 +65,7 @@ const ScheduleCard = ({ schedule, status = STATUS.PENDING, onTake, onSnooze, onP
                     </Text>
                     {isSnoozed && (
                         <View style={styles.snoozedBadge}>
-                            <Text style={styles.snoozedText}>SNOOZED</Text>
+                            <Text style={styles.snoozedText}>ĐÃ HOÃN</Text>
                         </View>
                     )}
                 </View>
@@ -78,9 +78,9 @@ const ScheduleCard = ({ schedule, status = STATUS.PENDING, onTake, onSnooze, onP
                 {isSnoozed && (
                     <View style={styles.actionsRow}>
                         <TouchableOpacity onPress={onTake}>
-                            <Text style={styles.takeNowText}>Take now</Text>
+                            <Text style={styles.takeNowText}>Uống ngay</Text>
                         </TouchableOpacity>
-                        <Text style={styles.remindText}>  Remind in 15m</Text>
+                        <Text style={styles.remindText}>  Nhắc lại sau 15 phút</Text>
                     </View>
                 )}
 

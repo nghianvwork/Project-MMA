@@ -86,7 +86,7 @@ const AddScheduleScreen = ({ navigation, route }) => {
 
             await createSchedule(data);
             Alert.alert('Thành công', 'Tạo lịch uống thuốc thành công', [
-                { text: 'OK', onPress: () => navigation.goBack() },
+                { text: 'Đóng', onPress: () => navigation.goBack() },
             ]);
         } catch (error) {
             Alert.alert('Lỗi', error.message || 'Không thể tạo lịch');
