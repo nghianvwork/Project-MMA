@@ -4,7 +4,7 @@ import * as AuthSession from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
 import Constants from "expo-constants";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -98,6 +98,11 @@ if (shouldUseGoogleProxy) {
 if (__DEV__) {
   // Dùng URL này để thêm vào Google Console Authorized redirect URIs.
   console.log("REDIRECT:", googleRedirectUri);
+  console.log("GOOGLE PROXY:", {
+    isExpoGo,
+    shouldUseGoogleProxy,
+    projectNameForProxy,
+  });
 }
 
 const toVietnameseMessage = (message, fallback) => {
@@ -119,8 +124,13 @@ export default function LoginScreen({
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const googleNonce = useMemo(
+    () => Math.random().toString(36).slice(2),
+    [],
+  );
+
   const [googleRequest, _googleResponse, googlePromptAsync] =
-    Google.useIdTokenAuthRequest({
+    Google.useAuthRequest({
       expoClientId:
         process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID ||
         process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
@@ -134,6 +144,12 @@ export default function LoginScreen({
         process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || configuredGoogleClientId,
       redirectUri: googleRedirectUri,
       useProxy: shouldUseGoogleProxy,
+      responseType: AuthSession.ResponseType.IdToken,
+      usePKCE: false,
+      scopes: ["openid", "profile", "email"],
+      extraParams: {
+        nonce: googleNonce,
+      },
     });
 
   const getExactRequestRedirectUri = () => {
@@ -240,7 +256,10 @@ export default function LoginScreen({
           : { useProxy: true }
         : {};
 
+      console.log("GOOGLE PROMPT OPTIONS:", promptOptions);
+      console.log("GOOGLE REQUEST URL:", googleRequest?.url);
       const result = await googlePromptAsync(promptOptions);
+      console.log("GOOGLE AUTH RESULT:", result?.type, result);
 
       if (result.type !== "success") {
         if (result.type === "error") {
@@ -266,6 +285,12 @@ export default function LoginScreen({
         result.params?.access_token || result.authentication?.accessToken || "";
 
       if (!idToken && !accessToken) {
+        console.log("GOOGLE AUTH TOKENS MISSING:", {
+          idToken,
+          accessToken,
+          params: result.params,
+          authentication: result.authentication,
+        });
         setErrorMessage("Không lấy được Google token từ phản hồi Google.");
         return;
       }

@@ -1,16 +1,5 @@
 const db = require("../config/database");
 
-const ensureMemberOwnership = async (memberId, userId) => {
-  if (!memberId) {
-    return true;
-  }
-  const [members] = await db.query(
-    "SELECT id FROM FamilyMembers WHERE id = ? AND user_id = ?",
-    [memberId, userId]
-  );
-  return members.length > 0;
-};
-
 const ensureMedicineOwnership = async (medicineId, userId) => {
   const [medicines] = await db.query(
     "SELECT id FROM Medicines WHERE id = ? AND user_id = ?",
@@ -20,9 +9,6 @@ const ensureMedicineOwnership = async (medicineId, userId) => {
 };
 
 const ensureScheduleOwnership = async (scheduleId, userId) => {
-  if (!scheduleId) {
-    return true;
-  }
   const [schedules] = await db.query(
     "SELECT id FROM Schedules WHERE id = ? AND user_id = ?",
     [scheduleId, userId]
@@ -33,32 +19,37 @@ const ensureScheduleOwnership = async (scheduleId, userId) => {
 const getMedicationLogs = async (req, res) => {
   try {
     const userId = req.userId;
-    const { member_id, status, from, to } = req.query;
+    const { status, from, to, schedule_id, medicine_id } = req.query;
 
-    let query = "SELECT * FROM MedicationLogs WHERE user_id = ?";
+    let query = "SELECT * FROM Medication_Logs WHERE user_id = ?";
     const params = [userId];
-
-    if (member_id) {
-      query += " AND member_id = ?";
-      params.push(member_id);
-    }
 
     if (status) {
       query += " AND status = ?";
       params.push(status);
     }
 
+    if (schedule_id) {
+      query += " AND schedule_id = ?";
+      params.push(schedule_id);
+    }
+
+    if (medicine_id) {
+      query += " AND medicine_id = ?";
+      params.push(medicine_id);
+    }
+
     if (from) {
-      query += " AND planned_time >= ?";
+      query += " AND scheduled_time >= ?";
       params.push(from);
     }
 
     if (to) {
-      query += " AND planned_time <= ?";
+      query += " AND scheduled_time <= ?";
       params.push(to);
     }
 
-    query += " ORDER BY planned_time DESC";
+    query += " ORDER BY scheduled_time DESC";
 
     const [logs] = await db.query(query, params);
     res.json({ success: true, data: logs, total: logs.length });
@@ -75,25 +66,13 @@ const getMedicationLogs = async (req, res) => {
 const createMedicationLog = async (req, res) => {
   try {
     const userId = req.userId;
-    const {
-      member_id,
-      schedule_id,
-      medicine_id,
-      planned_time,
-      taken_time,
-      status,
-      note,
-    } = req.body;
+    const { schedule_id, medicine_id, scheduled_time, taken_time, status, note, side_effect } =
+      req.body;
 
-    if (!medicine_id || !planned_time) {
+    if (!schedule_id || !medicine_id || !scheduled_time) {
       return res
         .status(400)
-        .json({ success: false, message: "medicine_id và planned_time là bắt buộc" });
-    }
-
-    const hasMember = await ensureMemberOwnership(member_id, userId);
-    if (!hasMember) {
-      return res.status(400).json({ success: false, message: "member_id không hợp lệ" });
+        .json({ success: false, message: "schedule_id, medicine_id, scheduled_time là bắt buộc" });
     }
 
     const hasMedicine = await ensureMedicineOwnership(medicine_id, userId);
@@ -107,22 +86,22 @@ const createMedicationLog = async (req, res) => {
     }
 
     const [result] = await db.query(
-      `INSERT INTO MedicationLogs
-      (user_id, member_id, schedule_id, medicine_id, planned_time, taken_time, status, note)
+      `INSERT INTO Medication_Logs
+      (schedule_id, medicine_id, user_id, scheduled_time, taken_time, status, note, side_effect)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        userId,
-        member_id || null,
         schedule_id || null,
         medicine_id,
-        planned_time,
+        userId,
+        scheduled_time,
         taken_time || null,
-        status || "taken",
+        status || "taken_on_time",
         note || null,
+        side_effect || null,
       ]
     );
 
-    const [logs] = await db.query("SELECT * FROM MedicationLogs WHERE id = ?", [
+    const [logs] = await db.query("SELECT * FROM Medication_Logs WHERE id = ?", [
       result.insertId,
     ]);
 
@@ -145,21 +124,22 @@ const updateMedicationLog = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.userId;
-    const { member_id, schedule_id, medicine_id, planned_time, taken_time, status, note } =
-      req.body;
+    const {
+      schedule_id,
+      medicine_id,
+      scheduled_time,
+      taken_time,
+      status,
+      note,
+      side_effect,
+    } = req.body;
 
-    const [existing] = await db.query(
-      "SELECT * FROM MedicationLogs WHERE id = ? AND user_id = ?",
-      [id, userId]
-    );
+    const [existing] = await db.query("SELECT * FROM Medication_Logs WHERE id = ? AND user_id = ?", [
+      id,
+      userId,
+    ]);
     if (existing.length === 0) {
       return res.status(404).json({ success: false, message: "Không tìm thấy lịch sử" });
-    }
-
-    const targetMemberId = member_id !== undefined ? member_id : existing[0].member_id;
-    const hasMember = await ensureMemberOwnership(targetMemberId, userId);
-    if (!hasMember) {
-      return res.status(400).json({ success: false, message: "member_id không hợp lệ" });
     }
 
     const targetMedicineId = medicine_id !== undefined ? medicine_id : existing[0].medicine_id;
@@ -175,23 +155,23 @@ const updateMedicationLog = async (req, res) => {
     }
 
     await db.query(
-      `UPDATE MedicationLogs
-       SET member_id = ?, schedule_id = ?, medicine_id = ?, planned_time = ?, taken_time = ?, status = ?, note = ?
+      `UPDATE Medication_Logs
+       SET schedule_id = ?, medicine_id = ?, scheduled_time = ?, taken_time = ?, status = ?, note = ?, side_effect = ?
        WHERE id = ? AND user_id = ?`,
       [
-        targetMemberId,
         targetScheduleId,
         targetMedicineId,
-        planned_time || existing[0].planned_time,
+        scheduled_time || existing[0].scheduled_time,
         taken_time !== undefined ? taken_time : existing[0].taken_time,
         status || existing[0].status,
         note !== undefined ? note : existing[0].note,
+        side_effect !== undefined ? side_effect : existing[0].side_effect,
         id,
         userId,
       ]
     );
 
-    const [logs] = await db.query("SELECT * FROM MedicationLogs WHERE id = ?", [id]);
+    const [logs] = await db.query("SELECT * FROM Medication_Logs WHERE id = ?", [id]);
 
     res.json({
       success: true,
@@ -213,15 +193,15 @@ const deleteMedicationLog = async (req, res) => {
     const { id } = req.params;
     const userId = req.userId;
 
-    const [existing] = await db.query(
-      "SELECT id FROM MedicationLogs WHERE id = ? AND user_id = ?",
-      [id, userId]
-    );
+    const [existing] = await db.query("SELECT id FROM Medication_Logs WHERE id = ? AND user_id = ?", [
+      id,
+      userId,
+    ]);
     if (existing.length === 0) {
       return res.status(404).json({ success: false, message: "Không tìm thấy lịch sử" });
     }
 
-    await db.query("DELETE FROM MedicationLogs WHERE id = ? AND user_id = ?", [id, userId]);
+    await db.query("DELETE FROM Medication_Logs WHERE id = ? AND user_id = ?", [id, userId]);
     res.json({ success: true, message: "Xóa lịch sử uống thuốc thành công" });
   } catch (error) {
     console.error("Lỗi khi xóa lịch sử uống thuốc:", error);
@@ -236,23 +216,18 @@ const deleteMedicationLog = async (req, res) => {
 const getMedicationSummary = async (req, res) => {
   try {
     const userId = req.userId;
-    const { member_id, from, to } = req.query;
+    const { from, to } = req.query;
 
-    let query = "SELECT status, COUNT(*) as count FROM MedicationLogs WHERE user_id = ?";
+    let query = "SELECT status, COUNT(*) as count FROM Medication_Logs WHERE user_id = ?";
     const params = [userId];
 
-    if (member_id) {
-      query += " AND member_id = ?";
-      params.push(member_id);
-    }
-
     if (from) {
-      query += " AND planned_time >= ?";
+      query += " AND scheduled_time >= ?";
       params.push(from);
     }
 
     if (to) {
-      query += " AND planned_time <= ?";
+      query += " AND scheduled_time <= ?";
       params.push(to);
     }
 
@@ -269,7 +244,7 @@ const getMedicationSummary = async (req, res) => {
     );
 
     const completed =
-      (summary.by_status.taken || 0) + (summary.by_status.late || 0);
+      (summary.by_status.taken_on_time || 0) + (summary.by_status.late || 0);
     const adherence = summary.total > 0 ? Math.round((completed / summary.total) * 100) : 0;
 
     res.json({
