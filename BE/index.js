@@ -23,6 +23,8 @@ const medicineRoutes = require('./routes/medicineRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
 const familyRoutes = require("./routes/familyRoutes");
 const medicationLogRoutes = require("./routes/medicationLogRoutes");
+const notificationRoutes = require('./routes/notificationRoutes');
+const { startCronJobs } = require('./services/cronJobs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -83,6 +85,7 @@ app.use('/api/medicines', medicineRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use("/api/family-members", familyRoutes);
 app.use("/api/medication-logs", medicationLogRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -112,7 +115,11 @@ app.listen(PORT, () => {
   console.log(`   📅 Schedules: http://localhost:${PORT}/api/schedules\n`);
   console.log(`   👨‍👩‍👧‍👦 Family: http://localhost:${PORT}/api/family-members`);
   console.log(`   ✅ Logs: http://localhost:${PORT}/api/medication-logs`);
+  console.log(`   🔔 Notifications: http://localhost:${PORT}/api/notifications`);
   console.log(`\n`);
+
+  // Khởi động cron jobs cho push notification
+  startCronJobs();
 });
 
 module.exports = app;
