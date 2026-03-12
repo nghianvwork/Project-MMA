@@ -21,6 +21,11 @@ swaggerDocument.servers = [
 // Import routes
 const medicineRoutes = require('./routes/medicineRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
+const familyRoutes = require("./routes/familyRoutes");
+const healthRoutes = require("./routes/healthRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
+const medicationLogRoutes = require("./routes/medicationLogRoutes");
+const accessGrantRoutes = require("./routes/accessGrantRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -79,6 +84,11 @@ app.get('/health', async (req, res) => {
 app.use("/api/user", userRoutes);
 app.use('/api/medicines', medicineRoutes);
 app.use('/api/schedules', scheduleRoutes);
+app.use("/api/family-members", familyRoutes);
+app.use("/api/health-records", healthRoutes);
+app.use("/api/notification-settings", notificationRoutes);
+app.use("/api/medication-logs", medicationLogRoutes);
+app.use("/api/access-grants", accessGrantRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -106,6 +116,11 @@ app.listen(PORT, () => {
   console.log(`\n📖 API Endpoints:`);
   console.log(`   🏥 Medicines: http://localhost:${PORT}/api/medicines`);
   console.log(`   📅 Schedules: http://localhost:${PORT}/api/schedules\n`);
+  console.log(`   👨‍👩‍👧‍👦 Family: http://localhost:${PORT}/api/family-members`);
+  console.log(`   🧾 Health: http://localhost:${PORT}/api/health-records`);
+  console.log(`   🔔 Notifications: http://localhost:${PORT}/api/notification-settings`);
+  console.log(`   ✅ Logs: http://localhost:${PORT}/api/medication-logs`);
+  console.log(`   🔐 Access: http://localhost:${PORT}/api/access-grants\n`);
 });
 
 module.exports = app;
