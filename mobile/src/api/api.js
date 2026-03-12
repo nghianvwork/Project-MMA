@@ -1,18 +1,27 @@
 import axios from 'axios';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 // Physical device: use LAN IP
 // Android emulator: 10.0.2.2
 // iOS simulator: localhost
-const API_BASE_URL =
-    Constants.expoConfig?.extra?.apiBaseUrl ||
-    process.env.EXPO_PUBLIC_API_BASE_URL
-        ? `${process.env.EXPO_PUBLIC_API_BASE_URL}/api`
-        : 'http://10.33.59.167:3000/api';
+const getBaseUrl = () => {
+    const expoExtra = Constants.expoConfig?.extra?.apiBaseUrl;
+    if (expoExtra) return expoExtra.replace(/\/+$/, '') + '/api';
+
+    const envUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+    if (envUrl) return envUrl.replace(/\/+$/, '') + '/api';
+
+    // Fallback per platform
+    if (Platform.OS === 'android') return 'http://10.0.2.2:3000/api';
+    return 'http://localhost:3000/api';
+};
+
+const API_BASE_URL = getBaseUrl();
 
 const api = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 10000,
+    timeout: 30000,
     headers: {
         'Content-Type': 'application/json',
     },

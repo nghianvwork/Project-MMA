@@ -60,12 +60,12 @@ const AddMedicineScreen = ({ navigation, route }) => {
             if (isEdit && existingMedicine) {
                 await updateMedicine(existingMedicine.id, data);
                 Alert.alert('Thành công', 'Cập nhật thuốc thành công', [
-                    { text: 'OK', onPress: () => navigation.goBack() },
+                    { text: 'Đóng', onPress: () => navigation.goBack() },
                 ]);
             } else {
                 await createMedicine(data);
                 Alert.alert('Thành công', 'Thêm thuốc thành công', [
-                    { text: 'OK', onPress: () => navigation.goBack() },
+                    { text: 'Đóng', onPress: () => navigation.goBack() },
                 ]);
             }
         } catch (error) {

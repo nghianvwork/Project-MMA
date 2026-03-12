@@ -99,9 +99,9 @@ const ScheduleScreen = ({ navigation }) => {
     }, {});
 
     const groupLabels = {
-        MORNING: { label: 'MORNING', icon: '🌅' },
-        AFTERNOON: { label: 'AFTERNOON', icon: '☀️' },
-        EVENING: { label: 'EVENING', icon: '🌙' },
+        MORNING: { label: 'BUỔI SÁNG', icon: '🌅' },
+        AFTERNOON: { label: 'BUỔI CHIỀU', icon: '☀️' },
+        EVENING: { label: 'BUỔI TỐI', icon: '🌙' },
     };
 
     const groupDotColors = {
@@ -112,8 +112,11 @@ const ScheduleScreen = ({ navigation }) => {
 
     const formatDateHeader = () => {
         const date = new Date(selectedDate);
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+        return date.toLocaleDateString('vi-VN', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+        });
     };
 
     return (
@@ -127,7 +130,7 @@ const ScheduleScreen = ({ navigation }) => {
                 {/* Header */}
                 <View style={styles.header}>
                     <View>
-                        <Text style={styles.title}>Schedule</Text>
+                        <Text style={styles.title}>Lịch uống thuốc</Text>
                         <Text style={styles.dateText}>{formatDateHeader()}</Text>
                     </View>
                     <TouchableOpacity style={styles.calendarBtn}>
