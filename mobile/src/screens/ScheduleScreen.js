@@ -9,6 +9,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../theme/theme';
 import { getSchedulesByDate } from '../api/scheduleApi';
 import { updateStock } from '../api/medicineApi';
+import { createMedicationLog } from '../api/medicationLogApi';
+import { scheduleSnoozeNotification } from '../services/notificationService';
+import { cancelScheduleNotification } from '../services/scheduleNotificationManager';
 import DaySelector from '../components/DaySelector';
 import ScheduleCard, { STATUS } from '../components/ScheduleCard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -49,13 +52,45 @@ const ScheduleScreen = ({ navigation }) => {
         setRefreshing(false);
     };
 
+    const buildScheduledDateTime = (dateStr, timeStr) => {
+        const [year, month, day] = String(dateStr || '').split('-').map(Number);
+        const [hour, minute] = String(timeStr || '00:00:00').split(':').map(Number);
+
+        if (!year || !month || !day) {
+            return null;
+        }
+
+        const scheduled = new Date(year, month - 1, day, hour || 0, minute || 0, 0, 0);
+        return Number.isNaN(scheduled.getTime()) ? null : scheduled;
+    };
+
     const handleTake = async (schedule) => {
+        const scheduledAt = buildScheduledDateTime(selectedDate, schedule.time_of_day);
+        if (scheduledAt && new Date() < scheduledAt) {
+            const hh = String(scheduledAt.getHours()).padStart(2, '0');
+            const mm = String(scheduledAt.getMinutes()).padStart(2, '0');
+            Alert.alert('Chưa đến giờ', `Chưa đến giờ uống thuốc (${hh}:${mm}).`);
+            return;
+        }
+
         try {
+            // Log medication as taken
+            await createMedicationLog({
+                schedule_id: schedule.id,
+                medicine_id: schedule.medicine_id,
+                scheduled_time: schedule.time_of_day || new Date().toISOString(),
+                taken_time: new Date().toISOString(),
+                status: 'taken_on_time',
+            }).catch((err) => console.log('Log failed:', err.message));
+
             // Deduct stock
             if (schedule.stock_quantity !== undefined) {
                 const newQty = Math.max(0, schedule.stock_quantity - (schedule.dose_amount || 1));
                 await updateStock(schedule.medicine_id, newQty).catch(() => { });
             }
+
+            // Cancel this schedule's notification for today
+            await cancelScheduleNotification(schedule.id).catch(() => {});
 
             // Mark as taken locally
             const newTakenMap = { ...takenMap, [schedule.id]: true };
@@ -74,7 +109,17 @@ const ScheduleScreen = ({ navigation }) => {
         }
     };
 
-    const handleSnooze = (schedule) => {
+    const handleSnooze = async (schedule) => {
+        try {
+            await scheduleSnoozeNotification({
+                scheduleId: schedule.id,
+                medicineId: schedule.medicine_id,
+                medicineName: schedule.medicine_name,
+                dosage: schedule.dosage,
+                doseAmount: schedule.dose_amount,
+                form: schedule.form,
+            });
+        } catch {}
         setSnoozedMap({ ...snoozedMap, [schedule.id]: true });
     };
 

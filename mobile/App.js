@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { StatusBar, StyleSheet, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
@@ -22,12 +22,23 @@ import ScheduleScreen from './src/screens/ScheduleScreen';
 import MedicineListScreen from './src/screens/MedicineListScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import AddMedicineScreen from './src/screens/AddMedicineScreen';
+import BarcodeScannerScreen from './src/screens/BarcodeScannerScreen';
 import AddScheduleScreen from './src/screens/AddScheduleScreen';
 import AlarmScreen from './src/screens/AlarmScreen';
 
 // Theme
 import { COLORS, SIZES, FONTS } from './src/theme/theme';
 import { setAuthToken } from './src/api/api';
+
+// Notifications
+import {
+  requestPermissions,
+  getExpoPushToken,
+  setupNotificationListeners,
+  cancelAllNotifications,
+} from './src/services/notificationService';
+import { syncScheduleNotifications } from './src/services/scheduleNotificationManager';
+import { savePushToken, removePushToken } from './src/api/notificationApi';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -65,6 +76,7 @@ function MedicineStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MedicineList" component={MedicineListScreen} />
       <Stack.Screen name="AddMedicine" component={AddMedicineScreen} />
+      <Stack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} />
     </Stack.Navigator>
   );
 }
@@ -75,6 +87,8 @@ export default function App() {
   const [screen, setScreen] = useState('welcome');
   const [session, setSession] = useState(null);
   const [resetFlow, setResetFlow] = useState({ email: '', resetToken: '' });
+  const navigationRef = useRef(null);
+  const pushTokenRef = useRef(null);
 
   // Sync auth token with session (handles hot reload / re-render)
   useEffect(() => {
@@ -85,7 +99,41 @@ export default function App() {
     }
   }, [session]);
 
-  const handleLogout = () => {
+  // Setup notification listeners (once, persistent across screens)
+  useEffect(() => {
+    const cleanup = setupNotificationListeners(navigationRef);
+    return cleanup;
+  }, []);
+
+  // Initialize notifications when authenticated
+  const initNotifications = useCallback(async () => {
+    try {
+      const granted = await requestPermissions();
+      if (!granted) return;
+
+      // Register push token with backend
+      const token = await getExpoPushToken();
+      if (token) {
+        pushTokenRef.current = token;
+        await savePushToken(token, null, Platform.OS).catch((err) =>
+          console.log('[App] Push token save failed:', err.message)
+        );
+      }
+
+      // Schedule local notifications for upcoming medicine times
+      await syncScheduleNotifications();
+    } catch (error) {
+      console.log('[App] Notification init error:', error.message);
+    }
+  }, []);
+
+  const handleLogout = async () => {
+    // Deregister push token on logout
+    if (pushTokenRef.current) {
+      await removePushToken(pushTokenRef.current).catch(() => {});
+      pushTokenRef.current = null;
+    }
+    await cancelAllNotifications();
     setSession(null);
     setAuthToken(null);
     setScreen('welcome');
@@ -119,6 +167,8 @@ export default function App() {
           setSession(nextSession || null);
           if (nextSession?.token) {
             setAuthToken(nextSession.token);
+            // Initialize notifications after auth token is set
+            setTimeout(() => initNotifications(), 500);
           }
           setScreen('home');
         }}
@@ -243,7 +293,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="MainTabs" component={MainTabs} />

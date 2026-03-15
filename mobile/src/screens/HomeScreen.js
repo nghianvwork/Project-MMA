@@ -9,6 +9,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../theme/theme';
 import { getSchedulesByDate } from '../api/scheduleApi';
 import { getLowStockMedicines } from '../api/medicineApi';
+import { checkAndNotifyLowStock } from '../services/notificationService';
+import { syncScheduleNotifications } from '../services/scheduleNotificationManager';
 
 const HomeScreen = ({ navigation }) => {
     const [todaySchedules, setTodaySchedules] = useState([]);
@@ -25,7 +27,14 @@ const HomeScreen = ({ navigation }) => {
                 getLowStockMedicines().catch(() => ({ data: [] })),
             ]);
             setTodaySchedules(schedRes.data || []);
-            setLowStockMeds(stockRes.data || []);
+            const lowStock = stockRes.data || [];
+            setLowStockMeds(lowStock);
+
+            // Send local notifications for newly low-stock medicines
+            checkAndNotifyLowStock(lowStock).catch(() => {});
+
+            // Re-sync schedule notifications (picks up any new schedules)
+            syncScheduleNotifications().catch(() => {});
         } catch (error) {
             console.log('Error loading home data:', error);
         } finally {

@@ -1,43 +1,116 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    TextInput, StatusBar, Alert, KeyboardAvoidingView, Platform,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONTS, SIZES, SHADOWS } from '../theme/theme';
+import { COLORS, FONTS, SHADOWS, SIZES } from '../theme/theme';
 import { createMedicine, updateMedicine } from '../api/medicineApi';
 
 const FORM_OPTIONS = [
-    'Viên nén', 'Viên nang', 'Viên nang mềm', 'Viên sủi',
-    'Siro', 'Bột', 'Ống tiêm', 'Thuốc mỡ', 'Thuốc nhỏ mắt', 'Khác',
+    'Viên nén',
+    'Viên nang',
+    'Viên nang mềm',
+    'Viên sủi',
+    'Siro',
+    'Bột',
+    'Ống tiêm',
+    'Thuốc mỡ',
+    'Thuốc nhỏ mắt',
+    'Khác',
 ];
 
 const AddMedicineScreen = ({ navigation, route }) => {
     const existingMedicine = route.params?.medicine;
     const isEdit = route.params?.isEdit || false;
+    const scannedMedicine = route.params?.scannedMedicine;
+    const scanMeta = route.params?.scanMeta;
+    const scannedAt = route.params?.scannedAt;
 
     const [name, setName] = useState('');
+    const [barcode, setBarcode] = useState('');
     const [dosage, setDosage] = useState('');
     const [form, setForm] = useState('');
     const [note, setNote] = useState('');
     const [stockQuantity, setStockQuantity] = useState('0');
-    const [stockUnit, setStockUnit] = useState('viên');
+    const [stockUnit, setStockUnit] = useState('vien');
     const [lowStockThreshold, setLowStockThreshold] = useState('5');
     const [showFormPicker, setShowFormPicker] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [barcodeLocked, setBarcodeLocked] = useState(false);
+    const [scanFeedback, setScanFeedback] = useState('');
+    const [scanMatched, setScanMatched] = useState(false);
 
     useEffect(() => {
-        if (existingMedicine) {
-            setName(existingMedicine.name || '');
-            setDosage(existingMedicine.dosage || '');
-            setForm(existingMedicine.form || '');
-            setNote(existingMedicine.note || '');
-            setStockQuantity(String(existingMedicine.stock_quantity || 0));
-            setStockUnit(existingMedicine.stock_unit || 'viên');
-            setLowStockThreshold(String(existingMedicine.low_stock_threshold || 5));
+        if (!existingMedicine) {
+            return;
         }
+
+        setName(existingMedicine.name || '');
+        setBarcode(existingMedicine.barcode || '');
+        setDosage(existingMedicine.dosage || '');
+        setForm(existingMedicine.form || '');
+        setNote(existingMedicine.note || '');
+        setStockQuantity(String(existingMedicine.stock_quantity || 0));
+        setStockUnit(existingMedicine.stock_unit || 'vien');
+        setLowStockThreshold(String(existingMedicine.low_stock_threshold || 5));
+        setBarcodeLocked(false);
+        setScanFeedback('');
+        setScanMatched(false);
     }, [existingMedicine]);
+
+    useEffect(() => {
+        if (!scannedAt || !scannedMedicine) {
+            return;
+        }
+
+        if (scannedMedicine.barcode) {
+            setBarcode(scannedMedicine.barcode);
+            setBarcodeLocked(true);
+        }
+
+        if (scannedMedicine.name) {
+            setName(scannedMedicine.name);
+        }
+
+        if (scannedMedicine.dosage) {
+            setDosage(scannedMedicine.dosage);
+        }
+
+        if (scannedMedicine.form) {
+            setForm(scannedMedicine.form);
+        }
+
+        if (scannedMedicine.note) {
+            setNote(scannedMedicine.note);
+        }
+
+        setScanFeedback(
+            scanMeta?.matched
+                ? 'Đã tìm thấy thông tin thuốc và điền sẵn biểu mẫu.'
+                : 'Đã lưu mã vạch. Bạn có thể nhập thủ công các trường còn lại.',
+        );
+        setScanMatched(Boolean(scanMeta?.matched));
+
+        navigation.setParams({
+            scannedMedicine: undefined,
+            scanMeta: undefined,
+            scannedAt: undefined,
+        });
+    }, [navigation, scanMeta?.matched, scannedAt, scannedMedicine]);
+
+    const handleOpenScanner = () => {
+        navigation.navigate('BarcodeScanner');
+    };
 
     const handleSave = async () => {
         if (!name.trim()) {
@@ -46,15 +119,17 @@ const AddMedicineScreen = ({ navigation, route }) => {
         }
 
         setSaving(true);
+
         try {
             const data = {
                 name: name.trim(),
+                barcode: barcode.trim() || null,
                 dosage: dosage.trim() || null,
                 form: form || null,
                 note: note.trim() || null,
-                stock_quantity: parseInt(stockQuantity) || 0,
-                stock_unit: stockUnit.trim() || 'viên',
-                low_stock_threshold: parseInt(lowStockThreshold) || 5,
+                stock_quantity: parseInt(stockQuantity, 10) || 0,
+                stock_unit: stockUnit.trim() || 'vien',
+                low_stock_threshold: parseInt(lowStockThreshold, 10) || 5,
             };
 
             if (isEdit && existingMedicine) {
@@ -78,18 +153,71 @@ const AddMedicineScreen = ({ navigation, route }) => {
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" />
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-                {/* Header */}
+            <KeyboardAvoidingView
+                style={styles.flex}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            >
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                         <Ionicons name="chevron-back" size={24} color={COLORS.text} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>{isEdit ? 'Chỉnh sửa thuốc' : 'Thêm thuốc mới'}</Text>
-                    <View style={{ width: 40 }} />
+                    <Text style={styles.headerTitle}>
+                        {isEdit ? 'Chỉnh sửa thuốc' : 'Thêm thuốc mới'}
+                    </Text>
+                    <View style={styles.backBtnPlaceholder} />
                 </View>
 
-                <ScrollView contentContainerStyle={styles.form} showsVerticalScrollIndicator={false}>
-                    {/* Medicine Name */}
+                <ScrollView
+                    contentContainerStyle={styles.form}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    <View style={styles.scanCard}>
+                        <View style={styles.scanIcon}>
+                            <Ionicons name="barcode-outline" size={24} color={COLORS.primaryDark} />
+                        </View>
+                        <View style={styles.scanTextGroup}>
+                            <Text style={styles.scanTitle}>Quét mã vạch thuốc</Text>
+                            <Text style={styles.scanSubtitle}>
+                                Quét để điền sẵn mã vạch và tự động điền một số thông tin nếu tìm thấy.
+                            </Text>
+                        </View>
+                        <TouchableOpacity style={styles.scanButton} onPress={handleOpenScanner}>
+                            <Text style={styles.scanButtonText}>{barcode ? 'Quét lại' : 'Bắt đầu'}</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {scanFeedback ? (
+                        <View style={styles.feedbackBox}>
+                            <Ionicons
+                                name={scanMatched ? 'checkmark-circle' : 'information-circle'}
+                                size={18}
+                                color={scanMatched ? COLORS.success : COLORS.warning}
+                            />
+                            <Text style={styles.feedbackText}>{scanFeedback}</Text>
+                        </View>
+                    ) : null}
+
+                    <View style={styles.field}>
+                        <View style={styles.fieldHeader}>
+                            <Text style={styles.label}>Mã vạch</Text>
+                            {barcodeLocked ? (
+                                <View style={styles.barcodeBadge}>
+                                    <Ionicons name="lock-closed" size={12} color={COLORS.primaryDark} />
+                                    <Text style={styles.barcodeBadgeText}>Từ scan</Text>
+                                </View>
+                            ) : null}
+                        </View>
+                        <TextInput
+                            style={[styles.input, barcodeLocked && styles.inputDisabled]}
+                            placeholder="VD: 8934567890123"
+                            placeholderTextColor={COLORS.textMuted}
+                            value={barcode}
+                            onChangeText={setBarcode}
+                            editable={!barcodeLocked}
+                        />
+                    </View>
+
                     <View style={styles.field}>
                         <Text style={styles.label}>Tên thuốc *</Text>
                         <TextInput
@@ -101,7 +229,6 @@ const AddMedicineScreen = ({ navigation, route }) => {
                         />
                     </View>
 
-                    {/* Dosage */}
                     <View style={styles.field}>
                         <Text style={styles.label}>Liều dùng</Text>
                         <TextInput
@@ -113,42 +240,50 @@ const AddMedicineScreen = ({ navigation, route }) => {
                         />
                     </View>
 
-                    {/* Form */}
                     <View style={styles.field}>
                         <Text style={styles.label}>Dạng thuốc</Text>
                         <TouchableOpacity
                             style={styles.input}
-                            onPress={() => setShowFormPicker(!showFormPicker)}
+                            onPress={() => setShowFormPicker((current) => !current)}
                         >
                             <Text style={form ? styles.inputText : styles.placeholderText}>
                                 {form || 'Chọn dạng thuốc'}
                             </Text>
                             <Ionicons name="chevron-down" size={18} color={COLORS.textMuted} />
                         </TouchableOpacity>
-                        {showFormPicker && (
+                        {showFormPicker ? (
                             <View style={styles.pickerDropdown}>
                                 {FORM_OPTIONS.map((option) => (
                                     <TouchableOpacity
                                         key={option}
-                                        style={[styles.pickerItem, form === option && styles.pickerItemActive]}
+                                        style={[
+                                            styles.pickerItem,
+                                            form === option && styles.pickerItemActive,
+                                        ]}
                                         onPress={() => {
                                             setForm(option);
                                             setShowFormPicker(false);
                                         }}
                                     >
-                                        <Text style={[styles.pickerItemText, form === option && styles.pickerItemTextActive]}>
+                                        <Text
+                                            style={[
+                                                styles.pickerItemText,
+                                                form === option && styles.pickerItemTextActive,
+                                            ]}
+                                        >
                                             {option}
                                         </Text>
-                                        {form === option && <Ionicons name="checkmark" size={18} color={COLORS.primary} />}
+                                        {form === option ? (
+                                            <Ionicons name="checkmark" size={18} color={COLORS.primary} />
+                                        ) : null}
                                     </TouchableOpacity>
                                 ))}
                             </View>
-                        )}
+                        ) : null}
                     </View>
 
-                    {/* Stock Quantity & Unit */}
                     <View style={styles.row}>
-                        <View style={[styles.field, { flex: 2 }]}>
+                        <View style={[styles.field, styles.rowFieldLarge]}>
                             <Text style={styles.label}>Số lượng tồn kho</Text>
                             <TextInput
                                 style={styles.input}
@@ -159,7 +294,7 @@ const AddMedicineScreen = ({ navigation, route }) => {
                                 keyboardType="numeric"
                             />
                         </View>
-                        <View style={[styles.field, { flex: 1 }]}>
+                        <View style={[styles.field, styles.rowFieldSmall]}>
                             <Text style={styles.label}>Đơn vị</Text>
                             <TextInput
                                 style={styles.input}
@@ -171,7 +306,6 @@ const AddMedicineScreen = ({ navigation, route }) => {
                         </View>
                     </View>
 
-                    {/* Low Stock Threshold */}
                     <View style={styles.field}>
                         <Text style={styles.label}>Ngưỡng cảnh báo hết thuốc</Text>
                         <TextInput
@@ -184,7 +318,6 @@ const AddMedicineScreen = ({ navigation, route }) => {
                         />
                     </View>
 
-                    {/* Note */}
                     <View style={styles.field}>
                         <Text style={styles.label}>Ghi chú</Text>
                         <TextInput
@@ -193,13 +326,12 @@ const AddMedicineScreen = ({ navigation, route }) => {
                             placeholderTextColor={COLORS.textMuted}
                             value={note}
                             onChangeText={setNote}
-                            multiline={true}
+                            multiline
                             numberOfLines={3}
                             textAlignVertical="top"
                         />
                     </View>
 
-                    {/* Save Button */}
                     <TouchableOpacity
                         style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
                         onPress={handleSave}
@@ -208,7 +340,7 @@ const AddMedicineScreen = ({ navigation, route }) => {
                     >
                         <Ionicons name="checkmark-circle" size={22} color={COLORS.textWhite} />
                         <Text style={styles.saveBtnText}>
-                            {saving ? 'Đang lưu...' : (isEdit ? 'Cập nhật' : 'Thêm thuốc')}
+                            {saving ? 'Đang lưu...' : isEdit ? 'Cập nhật' : 'Thêm thuốc'}
                         </Text>
                     </TouchableOpacity>
                 </ScrollView>
@@ -218,6 +350,9 @@ const AddMedicineScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
+    flex: {
+        flex: 1,
+    },
     container: {
         flex: 1,
         backgroundColor: COLORS.background,
@@ -239,6 +374,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    backBtnPlaceholder: {
+        width: 40,
+        height: 40,
+    },
     headerTitle: {
         fontSize: SIZES.xl,
         ...FONTS.bold,
@@ -248,14 +387,96 @@ const styles = StyleSheet.create({
         padding: SIZES.paddingXL,
         paddingBottom: 40,
     },
+    scanCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.primaryLight,
+        borderRadius: SIZES.radiusLG,
+        padding: SIZES.paddingLG,
+        marginBottom: SIZES.paddingLG,
+        gap: 12,
+    },
+    scanIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: COLORS.surface,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    scanTextGroup: {
+        flex: 1,
+    },
+    scanTitle: {
+        fontSize: SIZES.md,
+        ...FONTS.bold,
+        color: COLORS.text,
+        marginBottom: 2,
+    },
+    scanSubtitle: {
+        fontSize: SIZES.sm,
+        color: COLORS.textSecondary,
+        lineHeight: 18,
+    },
+    scanButton: {
+        borderRadius: SIZES.radiusMD,
+        backgroundColor: COLORS.primary,
+        paddingHorizontal: SIZES.paddingLG,
+        paddingVertical: 10,
+    },
+    scanButtonText: {
+        fontSize: SIZES.sm,
+        ...FONTS.semibold,
+        color: COLORS.textWhite,
+    },
+    feedbackBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        backgroundColor: COLORS.surface,
+        borderRadius: SIZES.radiusMD,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        paddingHorizontal: SIZES.paddingLG,
+        paddingVertical: SIZES.paddingMD,
+        marginBottom: SIZES.paddingXL,
+    },
+    feedbackText: {
+        flex: 1,
+        fontSize: SIZES.sm,
+        color: COLORS.textSecondary,
+        lineHeight: 18,
+    },
     field: {
         marginBottom: SIZES.paddingXL,
+    },
+    fieldHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: SIZES.paddingSM,
     },
     label: {
         fontSize: SIZES.md,
         ...FONTS.semibold,
         color: COLORS.text,
         marginBottom: SIZES.paddingSM,
+    },
+    barcodeBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: COLORS.surface,
+        borderRadius: SIZES.radiusFull,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+    },
+    barcodeBadgeText: {
+        fontSize: SIZES.xs,
+        ...FONTS.semibold,
+        color: COLORS.primaryDark,
     },
     input: {
         backgroundColor: COLORS.surface,
@@ -271,6 +492,10 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         minHeight: 48,
     },
+    inputDisabled: {
+        backgroundColor: COLORS.surfaceSecondary,
+        color: COLORS.textSecondary,
+    },
     inputText: {
         fontSize: SIZES.md,
         color: COLORS.text,
@@ -280,12 +505,18 @@ const styles = StyleSheet.create({
         color: COLORS.textMuted,
     },
     textArea: {
-        minHeight: 80,
+        minHeight: 88,
         paddingTop: SIZES.paddingMD,
     },
     row: {
         flexDirection: 'row',
         gap: 12,
+    },
+    rowFieldLarge: {
+        flex: 2,
+    },
+    rowFieldSmall: {
+        flex: 1,
     },
     pickerDropdown: {
         backgroundColor: COLORS.surface,
