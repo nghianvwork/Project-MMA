@@ -246,6 +246,72 @@ Ví dụ: Authorization: Bearer <your_token>
         },
       },
     },
+
+    "/api/user/authorizations": {
+      get: {
+        tags: ["User"],
+        summary: "Lấy thông tin authorizations",
+        description:
+          "Trả về cấu hình authorization hiện tại (UserAuth Bearer) và trạng thái token nếu có gửi kèm header Authorization.",
+        responses: {
+          200: {
+            description: "Lấy authorizations thành công",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean", example: true },
+                    data: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          name: { type: "string", example: "UserAuth" },
+                          type: { type: "string", example: "http" },
+                          scheme: { type: "string", example: "bearer" },
+                          bearerFormat: { type: "string", example: "JWT" },
+                          headerName: {
+                            type: "string",
+                            example: "Authorization",
+                          },
+                          valuePrefix: { type: "string", example: "Bearer " },
+                          authorized: { type: "boolean", example: false },
+                        },
+                      },
+                    },
+                    currentAuthorization: {
+                      type: "object",
+                      properties: {
+                        provided: { type: "boolean", example: true },
+                        valid: { type: "boolean", example: true },
+                        tokenPreview: {
+                          type: "string",
+                          example: "eyJhbGciOiJI...xYz123",
+                          nullable: true,
+                        },
+                        user: {
+                          type: "object",
+                          nullable: true,
+                          properties: {
+                            id: { type: "string", example: "user-uuid" },
+                            email: {
+                              type: "string",
+                              example: "user@example.com",
+                              nullable: true,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     
 
     "/api/user/profile": {
