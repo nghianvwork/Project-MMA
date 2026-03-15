@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const path = require('path');
 const swaggerUi = require('swagger-ui-express');
 const getServerUrl = require('./utils/getServerUrl');
 const userRoutes = require("./routes/userRoutes");
@@ -33,6 +34,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Swagger UI - ĐẶT TRƯỚC các routes khác
 const swaggerOptions = {
@@ -42,9 +44,16 @@ const swaggerOptions = {
 };
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerOptions));
+app.get('/swagger.json', (req, res) => {
+  res.json(swaggerDocument);
+});
 
 // Routes
 app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'render-deploy.html'));
+});
+
+app.get('/api-info', (req, res) => {
   res.json({
     message: 'Medicine Management API 💊',
     version: '1.0.0',

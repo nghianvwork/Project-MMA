@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Medicine Management API | Render Deploy</title>
+    <style>
+      :root {
+        --bg: #f6f2e9;
+        --ink: #1f2933;
+        --muted: #5c6670;
+        --card: #fffaf0;
+        --line: #e8dcc7;
+        --accent: #005f73;
+        --accent-2: #d97706;
+        --ok: #1f8a4d;
+        --bad: #be123c;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 15% 15%, rgba(0, 95, 115, 0.16) 0, rgba(0, 95, 115, 0) 35%),
+          radial-gradient(circle at 85% 20%, rgba(217, 119, 6, 0.2) 0, rgba(217, 119, 6, 0) 30%),
+          linear-gradient(135deg, #f9f7f2 0%, #f3ead9 100%);
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+
+      .shell {
+        width: min(980px, 100%);
+        background: color-mix(in srgb, var(--card) 92%, white);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        box-shadow: 0 20px 60px rgba(31, 41, 51, 0.15);
+        overflow: hidden;
+        animation: rise 0.7s ease-out;
+      }
+
+      .hero {
+        padding: 28px;
+        border-bottom: 1px solid var(--line);
+        background: linear-gradient(95deg, rgba(0, 95, 115, 0.08), rgba(217, 119, 6, 0.08));
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(0, 95, 115, 0.12);
+        color: var(--accent);
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      h1 {
+        margin: 14px 0 10px;
+        font-size: clamp(26px, 4vw, 42px);
+        line-height: 1.1;
+      }
+
+      .subtitle {
+        margin: 0;
+        color: var(--muted);
+        font-size: clamp(15px, 2vw, 18px);
+      }
+
+      .content {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 16px;
+        padding: 24px;
+      }
+
+      .card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px;
+      }
+
+      .card h2 {
+        margin: 0 0 12px;
+        font-size: 18px;
+      }
+
+      .status {
+        grid-column: span 5;
+      }
+
+      .quick-links {
+        grid-column: span 7;
+      }
+
+      .endpoints {
+        grid-column: span 12;
+      }
+
+      .status-line {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+      }
+
+      .dot {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: #94a3b8;
+        box-shadow: 0 0 0 6px rgba(148, 163, 184, 0.2);
+        transition: 0.25s ease;
+      }
+
+      .dot.ok {
+        background: var(--ok);
+        box-shadow: 0 0 0 6px rgba(31, 138, 77, 0.18);
+      }
+
+      .dot.bad {
+        background: var(--bad);
+        box-shadow: 0 0 0 6px rgba(190, 18, 60, 0.2);
+      }
+
+      .meta {
+        margin-top: 12px;
+        font-size: 14px;
+        color: var(--muted);
+      }
+
+      .links {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+      }
+
+      .btn {
+        text-decoration: none;
+        display: block;
+        text-align: center;
+        color: #fff;
+        font-weight: 700;
+        padding: 10px 14px;
+        border-radius: 10px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .btn.docs {
+        background: var(--accent);
+      }
+
+      .btn.health {
+        background: var(--accent-2);
+      }
+
+      .btn.info {
+        background: #334155;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(2, 6, 23, 0.16);
+      }
+
+      .endpoint-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 10px;
+      }
+
+      .api-filters {
+        display: grid;
+        grid-template-columns: 1fr 220px;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .api-filters input,
+      .api-filters select {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 14px;
+        background: #fff;
+        color: var(--ink);
+      }
+
+      .api-stats {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .api-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .api-row {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px;
+        display: grid;
+        grid-template-columns: 92px 1fr;
+        gap: 10px;
+        align-items: start;
+      }
+
+      .method {
+        display: inline-block;
+        text-align: center;
+        border-radius: 8px;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        padding: 8px 8px;
+      }
+
+      .method.get {
+        background: #15803d;
+      }
+
+      .method.post {
+        background: #1d4ed8;
+      }
+
+      .method.put {
+        background: #b45309;
+      }
+
+      .method.patch {
+        background: #6d28d9;
+      }
+
+      .method.delete {
+        background: #be123c;
+      }
+
+      .api-path {
+        margin: 0;
+        font-weight: 700;
+        word-break: break-word;
+      }
+
+      .api-summary {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .all-apis {
+        grid-column: span 12;
+      }
+
+      .empty {
+        border: 1px dashed var(--line);
+        border-radius: 10px;
+        padding: 12px;
+        color: var(--muted);
+      }
+
+      .endpoint-item {
+        border: 1px dashed var(--line);
+        border-radius: 10px;
+        padding: 10px;
+      }
+
+      .endpoint-item code {
+        font-size: 13px;
+        color: #0f172a;
+      }
+
+      @media (max-width: 860px) {
+        .status,
+        .quick-links,
+        .endpoints,
+        .all-apis {
+          grid-column: span 12;
+        }
+
+        .api-filters {
+          grid-template-columns: 1fr;
+        }
+
+        .api-row {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(12px) scale(0.985);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <span class="tag">Render Deployment</span>
+        <h1>Medicine Management API</h1>
+        <p class="subtitle">Giao diện theo doi tinh trang API sau khi deploy len Render</p>
+      </section>
+
+      <section class="content">
+        <article class="card status">
+          <h2>System Status</h2>
+          <div class="status-line">
+            <span id="statusDot" class="dot"></span>
+            <span id="statusText">Dang kiem tra...</span>
+          </div>
+          <p class="meta" id="statusMeta">Health check se cap nhat tu dong.</p>
+        </article>
+
+        <article class="card quick-links">
+          <h2>Quick Access</h2>
+          <div class="links">
+            <a class="btn docs" href="/api-docs">Swagger Docs</a>
+            <a class="btn health" href="/health">Health JSON</a>
+            <a class="btn info" href="/api-info">API Info JSON</a>
+          </div>
+        </article>
+
+        <article class="card endpoints">
+          <h2>Main Endpoints</h2>
+          <div class="endpoint-grid">
+            <div class="endpoint-item"><code>/api/user</code></div>
+            <div class="endpoint-item"><code>/api/medicines</code></div>
+            <div class="endpoint-item"><code>/api/schedules</code></div>
+            <div class="endpoint-item"><code>/api/family-members</code></div>
+            <div class="endpoint-item"><code>/api/medication-logs</code></div>
+            <div class="endpoint-item"><code>/api/notifications</code></div>
+          </div>
+        </article>
+
+        <article class="card all-apis">
+          <h2>Full Backend API</h2>
+          <p class="api-stats" id="apiStats">Dang tai danh sach API...</p>
+          <div class="api-filters">
+            <input id="apiSearch" type="text" placeholder="Tim theo path, summary, method..." />
+            <select id="apiTagFilter">
+              <option value="all">Tat ca nhom</option>
+            </select>
+          </div>
+          <div id="apiList" class="api-list"></div>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const methodsOrder = ['get', 'post', 'put', 'patch', 'delete'];
+      let allApiItems = [];
+
+      async function checkHealth() {
+        const dot = document.getElementById('statusDot');
+        const text = document.getElementById('statusText');
+        const meta = document.getElementById('statusMeta');
+
+        try {
+          const response = await fetch('/health', { cache: 'no-store' });
+          const data = await response.json();
+
+          if (!response.ok || data.status !== 'OK') {
+            throw new Error(data.error || 'Health check failed');
+          }
+
+          dot.classList.remove('bad');
+          dot.classList.add('ok');
+          text.textContent = 'API dang hoat dong tot';
+          meta.textContent =
+            'Database: ' + (data.database || 'Unknown') + ' | Time: ' + new Date(data.timestamp).toLocaleString();
+        } catch (error) {
+          dot.classList.remove('ok');
+          dot.classList.add('bad');
+          text.textContent = 'API gap su co';
+          meta.textContent = 'Chi tiet: ' + error.message;
+        }
+      }
+
+      function normalizeItems(paths) {
+        const items = [];
+        Object.entries(paths || {}).forEach(([path, defs]) => {
+          Object.entries(defs || {}).forEach(([method, config]) => {
+            const methodLower = method.toLowerCase();
+            if (!methodsOrder.includes(methodLower)) {
+              return;
+            }
+            items.push({
+              method: methodLower,
+              path,
+              summary: config.summary || config.description || 'Khong co mo ta',
+              tags: Array.isArray(config.tags) ? config.tags : [],
+            });
+          });
+        });
+
+        return items.sort((a, b) => {
+          const byPath = a.path.localeCompare(b.path);
+          if (byPath !== 0) {
+            return byPath;
+          }
+          return methodsOrder.indexOf(a.method) - methodsOrder.indexOf(b.method);
+        });
+      }
+
+      function renderTagFilter(items) {
+        const select = document.getElementById('apiTagFilter');
+        const current = select.value;
+        const tags = new Set();
+        items.forEach((item) => {
+          if (!item.tags.length) {
+            tags.add('Untagged');
+          } else {
+            item.tags.forEach((tag) => tags.add(tag));
+          }
+        });
+
+        const sortedTags = Array.from(tags).sort((a, b) => a.localeCompare(b));
+        select.innerHTML = '<option value="all">Tat ca nhom</option>';
+        sortedTags.forEach((tag) => {
+          const option = document.createElement('option');
+          option.value = tag;
+          option.textContent = tag;
+          select.appendChild(option);
+        });
+
+        if ([...select.options].some((option) => option.value === current)) {
+          select.value = current;
+        }
+      }
+
+      function applyApiFilter() {
+        const search = document.getElementById('apiSearch').value.trim().toLowerCase();
+        const tag = document.getElementById('apiTagFilter').value;
+
+        const filtered = allApiItems.filter((item) => {
+          const itemTags = item.tags.length ? item.tags : ['Untagged'];
+          const matchesTag = tag === 'all' || itemTags.includes(tag);
+          const text = (item.method + ' ' + item.path + ' ' + item.summary + ' ' + itemTags.join(' ')).toLowerCase();
+          const matchesSearch = search === '' || text.includes(search);
+          return matchesTag && matchesSearch;
+        });
+
+        renderApiList(filtered, allApiItems.length);
+      }
+
+      function renderApiList(items, total) {
+        const list = document.getElementById('apiList');
+        const stats = document.getElementById('apiStats');
+
+        stats.textContent = 'Dang hien thi ' + items.length + '/' + total + ' endpoint';
+        list.innerHTML = '';
+
+        if (!items.length) {
+          list.innerHTML = '<div class="empty">Khong tim thay endpoint phu hop bo loc.</div>';
+          return;
+        }
+
+        items.forEach((item) => {
+          const row = document.createElement('article');
+          row.className = 'api-row';
+
+          const method = document.createElement('span');
+          method.className = 'method ' + item.method;
+          method.textContent = item.method.toUpperCase();
+
+          const infoWrap = document.createElement('div');
+          const pathEl = document.createElement('p');
+          pathEl.className = 'api-path';
+          pathEl.textContent = item.path;
+
+          const summaryEl = document.createElement('p');
+          summaryEl.className = 'api-summary';
+          const tagText = item.tags.length ? ' | Tags: ' + item.tags.join(', ') : '';
+          summaryEl.textContent = item.summary + tagText;
+
+          infoWrap.appendChild(pathEl);
+          infoWrap.appendChild(summaryEl);
+          row.appendChild(method);
+          row.appendChild(infoWrap);
+          list.appendChild(row);
+        });
+      }
+
+      async function loadFullApiList() {
+        const stats = document.getElementById('apiStats');
+        try {
+          const response = await fetch('/swagger.json', { cache: 'no-store' });
+          if (!response.ok) {
+            throw new Error('Khong tai duoc swagger.json');
+          }
+
+          const swagger = await response.json();
+          allApiItems = normalizeItems(swagger.paths);
+          renderTagFilter(allApiItems);
+          applyApiFilter();
+        } catch (error) {
+          stats.textContent = 'Khong tai duoc danh sach API: ' + error.message;
+          document.getElementById('apiList').innerHTML =
+            '<div class="empty">Ban van co the xem chi tiet API trong /api-docs.</div>';
+        }
+      }
+
+      checkHealth();
+      loadFullApiList();
+      setInterval(checkHealth, 30000);
+      document.getElementById('apiSearch').addEventListener('input', applyApiFilter);
+      document.getElementById('apiTagFilter').addEventListener('change', applyApiFilter);
+    </script>
+  </body>
+</html>
