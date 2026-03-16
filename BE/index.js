@@ -25,9 +25,6 @@ const medicineRoutes = require('./routes/medicineRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
 const familyRoutes = require("./routes/familyRoutes");
 const medicationLogRoutes = require("./routes/medicationLogRoutes");
-
-const notificationRoutes = require("./routes/notificationRoutes");
-
 const notificationRoutes = require('./routes/notificationRoutes');
 const { startCronJobs } = require('./services/cronJobs');
 

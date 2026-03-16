@@ -19,9 +19,9 @@ CREATE TABLE IF NOT EXISTS FamilyMembers (
 
 CREATE TABLE IF NOT EXISTS HealthRecords (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(50) NOT NULL,
   member_id INT NULL,
-  category VARCHAR(30) NOT NULL,
+  category VARCHAR(30) NOT NULL, -- underlying | allergy | surgery
   title VARCHAR(255) NOT NULL,
   description TEXT NULL,
   diagnosed_date DATE NULL,
@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS HealthRecords (
   severity VARCHAR(50) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_health_user (user_id),
-  INDEX idx_health_member (member_id)
+  INDEX idx_health_member (member_id),
+  INDEX idx_health_category (category)
 );
 
 CREATE TABLE IF NOT EXISTS MedicationLogs (
@@ -75,3 +76,15 @@ CREATE TABLE IF NOT EXISTS DataAccessGrants (
   INDEX idx_grants_user (user_id),
   INDEX idx_grants_member (member_id)
 );
+
+-- Ensure barcode field exists for Medicines table on existing databases
+ALTER TABLE Medicines
+  ADD COLUMN IF NOT EXISTS barcode VARCHAR(100) NULL AFTER name;
+
+CREATE INDEX IF NOT EXISTS idx_barcode ON Medicines (barcode);
+
+-- Keep existing databases in sync with current HealthRecords definition
+ALTER TABLE HealthRecords
+  MODIFY COLUMN user_id VARCHAR(50) NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_health_category ON HealthRecords (category);

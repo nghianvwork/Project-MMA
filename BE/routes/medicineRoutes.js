@@ -12,6 +12,7 @@ router.get('/', medicineController.getMedicines);
 router.get('/low-stock', medicineController.getLowStockMedicines);
 router.get('/:id', medicineController.getMedicineById);
 router.post('/', validateMedicine, medicineController.createMedicine);
+router.post('/with-barcode', validateMedicine, medicineController.createMedicineWithBarcode);
 router.put('/:id', validateMedicine, medicineController.updateMedicine);
 router.patch('/:id/stock', medicineController.updateStock);
 router.delete('/:id', medicineController.deleteMedicine);

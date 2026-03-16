@@ -1,5 +1,42 @@
 const db = require('../config/database');
 
+const insertMedicineForUser = async (userId, medicineData) => {
+  const {
+    name,
+    barcode,
+    dosage,
+    form,
+    note,
+    stock_quantity,
+    stock_unit,
+    low_stock_threshold
+  } = medicineData;
+
+  const [result] = await db.query(
+    `INSERT INTO Medicines 
+     (user_id, name, barcode, dosage, form, note, stock_quantity, stock_unit, low_stock_threshold) 
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      userId,
+      name,
+      barcode || null,
+      dosage || null,
+      form || null,
+      note || null,
+      stock_quantity || 0,
+      stock_unit || null,
+      low_stock_threshold || 5
+    ]
+  );
+
+  const [newMedicine] = await db.query(
+    'SELECT * FROM Medicines WHERE id = ?',
+    [result.insertId]
+  );
+
+  return newMedicine[0];
+};
+
 // Lấy danh sách thuốc của user
 const getMedicines = async (req, res) => {
   try {
@@ -74,50 +111,53 @@ const getMedicineById = async (req, res) => {
 const createMedicine = async (req, res) => {
   try {
     const userId = req.userId;
-    const {
-      name,
-      barcode,
-      dosage,
-      form,
-      note,
-      stock_quantity,
-      stock_unit,
-      low_stock_threshold
-    } = req.body;
-    
-    const [result] = await db.query(
-      `INSERT INTO Medicines 
-       (user_id, name, barcode, dosage, form, note, stock_quantity, stock_unit, low_stock_threshold) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        userId,
-        name,
-        barcode || null,
-        dosage || null,
-        form || null,
-        note || null,
-        stock_quantity || 0,
-        stock_unit || null,
-        low_stock_threshold || 5
-      ]
-    );
-    
-    // Lấy thông tin thuốc vừa tạo
-    const [newMedicine] = await db.query(
-      'SELECT * FROM Medicines WHERE id = ?',
-      [result.insertId]
-    );
+    const newMedicine = await insertMedicineForUser(userId, req.body);
     
     res.status(201).json({
       success: true,
       message: 'Thêm thuốc thành công',
-      data: newMedicine[0]
+      data: newMedicine
     });
   } catch (error) {
     console.error('Lỗi khi thêm thuốc:', error);
     res.status(500).json({
       success: false,
       message: 'Lỗi server khi thêm thuốc',
+      error: error.message
+    });
+  }
+};
+
+// Thêm thuốc mới với barcode bắt buộc
+const createMedicineWithBarcode = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { barcode } = req.body;
+
+    if (!barcode || barcode.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'barcode không được để trống'
+      });
+    }
+
+    const payload = {
+      ...req.body,
+      barcode: barcode.trim()
+    };
+
+    const newMedicine = await insertMedicineForUser(userId, payload);
+
+    res.status(201).json({
+      success: true,
+      message: 'Thêm thuốc với barcode thành công',
+      data: newMedicine
+    });
+  } catch (error) {
+    console.error('Lỗi khi thêm thuốc với barcode:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server khi thêm thuốc với barcode',
       error: error.message
     });
   }
@@ -319,6 +359,7 @@ module.exports = {
   getMedicines,
   getMedicineById,
   createMedicine,
+  createMedicineWithBarcode,
   updateMedicine,
   deleteMedicine,
   updateStock,
