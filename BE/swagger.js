@@ -509,34 +509,6 @@ Ví dụ: Authorization: Bearer <your_token>
         responses: { 201: { description: "Tạo thành công" } },
       },
     },
-    "/api/medicines/with-barcode": {
-      post: {
-        tags: ["Medicines"],
-        summary: "Thêm thuốc mới (bắt buộc barcode)",
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                required: ["name", "barcode"],
-                properties: {
-                  name: { type: "string", example: "Paracetamol" },
-                  barcode: { type: "string", example: "8934567890123" },
-                  dosage: { type: "string", example: "500mg" },
-                  form: { type: "string", example: "Viên nén" },
-                  note: { type: "string", example: "Uống sau ăn" },
-                  stock_quantity: { type: "integer", example: 20 },
-                  stock_unit: { type: "string", example: "viên" },
-                  low_stock_threshold: { type: "integer", example: 5 },
-                },
-              },
-            },
-          },
-        },
-        responses: { 201: { description: "Tạo thành công" } },
-      },
-    },
     "/api/medicines/{id}": {
       get: {
         tags: ["Medicines"],
