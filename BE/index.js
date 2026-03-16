@@ -3,6 +3,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const path = require('path');
 const swaggerUi = require('swagger-ui-express');
 const getServerUrl = require('./utils/getServerUrl');
 const userRoutes = require("./routes/userRoutes");
@@ -25,15 +26,13 @@ const scheduleRoutes = require('./routes/scheduleRoutes');
 const familyRoutes = require("./routes/familyRoutes");
 const medicationLogRoutes = require("./routes/medicationLogRoutes");
 
-<<<<<<< Updated upstream
-=======
 const notificationRoutes = require("./routes/notificationRoutes");
-const healthRoutes = require("./routes/healthRoutes");
-const healthProfileRoutes = require("./routes/healthProfileRoutes");
+
+const notificationRoutes = require('./routes/notificationRoutes');
 const { startCronJobs } = require('./services/cronJobs');
 
 
->>>>>>> Stashed changes
+main
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -41,6 +40,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Swagger UI - ĐẶT TRƯỚC các routes khác
 const swaggerOptions = {
@@ -50,9 +50,16 @@ const swaggerOptions = {
 };
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerOptions));
+app.get('/swagger.json', (req, res) => {
+  res.json(swaggerDocument);
+});
 
 // Routes
 app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'render-deploy.html'));
+});
+
+app.get('/api-info', (req, res) => {
   res.json({
     message: 'Medicine Management API 💊',
     version: '1.0.0',
@@ -94,14 +101,10 @@ app.use('/api/schedules', scheduleRoutes);
 app.use("/api/family-members", familyRoutes);
 app.use("/api/medication-logs", medicationLogRoutes);
 
-<<<<<<< Updated upstream
-=======
 app.use("/api/notifications", notificationRoutes);
-app.use("/api/health-records", healthRoutes);
-app.use("/api/health-profile", healthProfileRoutes);
 
 
->>>>>>> Stashed changes
+main
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -130,7 +133,11 @@ app.listen(PORT, () => {
   console.log(`   📅 Schedules: http://localhost:${PORT}/api/schedules\n`);
   console.log(`   👨‍👩‍👧‍👦 Family: http://localhost:${PORT}/api/family-members`);
   console.log(`   ✅ Logs: http://localhost:${PORT}/api/medication-logs`);
+  console.log(`   🔔 Notifications: http://localhost:${PORT}/api/notifications`);
   console.log(`\n`);
+
+  // Khởi động cron jobs cho push notification
+  startCronJobs();
 });
 
 module.exports = app;

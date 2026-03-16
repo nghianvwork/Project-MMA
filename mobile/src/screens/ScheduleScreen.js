@@ -9,14 +9,25 @@ import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../theme/theme';
 import { getSchedulesByDate } from '../api/scheduleApi';
 import { updateStock } from '../api/medicineApi';
+import { createMedicationLog } from '../api/medicationLogApi';
+
+
+import { scheduleSnoozeNotification } from '../services/notificationService';
+import { cancelScheduleNotification } from '../services/scheduleNotificationManager';
+
 import DaySelector from '../components/DaySelector';
 import ScheduleCard, { STATUS } from '../components/ScheduleCard';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { toVietnamDateString, toVietnamSqlDateTime } from '../utils/dateTime';
+
+const toSqlDateTime = (date, timeOfDay) => {
+    const safeTime = String(timeOfDay || '00:00:00');
+    const normalizedTime = safeTime.length === 5 ? `${safeTime}:00` : safeTime;
+    return `${date} ${normalizedTime}`;
+};
 
 const ScheduleScreen = ({ navigation }) => {
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedDate, setSelectedDate] = useState(toVietnamDateString());
     const [schedules, setSchedules] = useState([]);
-    const [takenMap, setTakenMap] = useState({});
     const [snoozedMap, setSnoozedMap] = useState({});
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -25,11 +36,6 @@ const ScheduleScreen = ({ navigation }) => {
         try {
             const res = await getSchedulesByDate(selectedDate).catch(() => ({ data: [] }));
             setSchedules(res.data || []);
-
-            // Load taken status from local storage
-            const takenStr = await AsyncStorage.getItem(`taken_${selectedDate}`);
-            if (takenStr) setTakenMap(JSON.parse(takenStr));
-            else setTakenMap({});
         } catch (error) {
             console.log('Error loading schedules:', error);
         } finally {
@@ -49,18 +55,63 @@ const ScheduleScreen = ({ navigation }) => {
         setRefreshing(false);
     };
 
+    const buildScheduledDateTime = (dateStr, timeStr) => {
+        const [year, month, day] = String(dateStr || '').split('-').map(Number);
+        const [hour, minute] = String(timeStr || '00:00:00').split(':').map(Number);
+
+        if (!year || !month || !day) {
+            return null;
+        }
+
+        const scheduled = new Date(year, month - 1, day, hour || 0, minute || 0, 0, 0);
+        return Number.isNaN(scheduled.getTime()) ? null : scheduled;
+    };
+
     const handleTake = async (schedule) => {
+        const scheduledAt = buildScheduledDateTime(selectedDate, schedule.time_of_day);
+        if (scheduledAt && new Date() < scheduledAt) {
+            const hh = String(scheduledAt.getHours()).padStart(2, '0');
+            const mm = String(scheduledAt.getMinutes()).padStart(2, '0');
+            Alert.alert('Chưa đến giờ', `Chưa đến giờ uống thuốc (${hh}:${mm}).`);
+            return;
+        }
+
         try {
+
+            const response = await createMedicationLog({
+                schedule_id: schedule.id,
+                medicine_id: schedule.medicine_id,
+                scheduled_time: toSqlDateTime(selectedDate, schedule.time_of_day),
+                taken_time: toVietnamSqlDateTime(),
+                status: 'taken_on_time',
+            });
+
+            // Log medication as taken
+            await createMedicationLog({
+                schedule_id: schedule.id,
+                medicine_id: schedule.medicine_id,
+                scheduled_time: schedule.time_of_day || new Date().toISOString(),
+                taken_time: new Date().toISOString(),
+                status: 'taken_on_time',
+            }).catch((err) => console.log('Log failed:', err.message));
+
+
             // Deduct stock
-            if (schedule.stock_quantity !== undefined) {
+            if (response.meta?.created !== false && schedule.stock_quantity !== undefined) {
                 const newQty = Math.max(0, schedule.stock_quantity - (schedule.dose_amount || 1));
                 await updateStock(schedule.medicine_id, newQty).catch(() => { });
             }
+
+
+
+            // Cancel this schedule's notification for today
+            await cancelScheduleNotification(schedule.id).catch(() => {});
 
             // Mark as taken locally
             const newTakenMap = { ...takenMap, [schedule.id]: true };
             setTakenMap(newTakenMap);
             await AsyncStorage.setItem(`taken_${selectedDate}`, JSON.stringify(newTakenMap));
+
 
             // Remove from snoozed if it was snoozed
             const newSnoozedMap = { ...snoozedMap };
@@ -74,12 +125,22 @@ const ScheduleScreen = ({ navigation }) => {
         }
     };
 
-    const handleSnooze = (schedule) => {
+    const handleSnooze = async (schedule) => {
+        try {
+            await scheduleSnoozeNotification({
+                scheduleId: schedule.id,
+                medicineId: schedule.medicine_id,
+                medicineName: schedule.medicine_name,
+                dosage: schedule.dosage,
+                doseAmount: schedule.dose_amount,
+                form: schedule.form,
+            });
+        } catch {}
         setSnoozedMap({ ...snoozedMap, [schedule.id]: true });
     };
 
     const getStatus = (schedule) => {
-        if (takenMap[schedule.id]) return STATUS.TAKEN;
+        if (schedule.medication_log_id) return STATUS.TAKEN;
         if (snoozedMap[schedule.id]) return STATUS.SNOOZED;
         return STATUS.PENDING;
     };
@@ -99,9 +160,9 @@ const ScheduleScreen = ({ navigation }) => {
     }, {});
 
     const groupLabels = {
-        MORNING: { label: 'MORNING', icon: '🌅' },
-        AFTERNOON: { label: 'AFTERNOON', icon: '☀️' },
-        EVENING: { label: 'EVENING', icon: '🌙' },
+        MORNING: { label: 'BUỔI SÁNG', icon: '🌅' },
+        AFTERNOON: { label: 'BUỔI CHIỀU', icon: '☀️' },
+        EVENING: { label: 'BUỔI TỐI', icon: '🌙' },
     };
 
     const groupDotColors = {
@@ -112,8 +173,11 @@ const ScheduleScreen = ({ navigation }) => {
 
     const formatDateHeader = () => {
         const date = new Date(selectedDate);
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+        return date.toLocaleDateString('vi-VN', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+        });
     };
 
     return (
@@ -127,7 +191,7 @@ const ScheduleScreen = ({ navigation }) => {
                 {/* Header */}
                 <View style={styles.header}>
                     <View>
-                        <Text style={styles.title}>Schedule</Text>
+                        <Text style={styles.title}>Lịch uống thuốc</Text>
                         <Text style={styles.dateText}>{formatDateHeader()}</Text>
                     </View>
                     <TouchableOpacity style={styles.calendarBtn}>

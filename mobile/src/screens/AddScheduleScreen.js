@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     TextInput, StatusBar, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -10,14 +11,14 @@ import { COLORS, FONTS, SIZES, SHADOWS } from '../theme/theme';
 import { createSchedule } from '../api/scheduleApi';
 import { getMedicines } from '../api/medicineApi';
 
-<<<<<<< Updated upstream
-=======
+
 import { syncMedicationReminders } from '../services/medicationReminderService';
-import { syncScheduleNotifications } from '../services/scheduleNotificationManager';
 import { toVietnamDateString } from '../utils/dateTime';
 
+import { syncScheduleNotifications } from '../services/scheduleNotificationManager';
 
->>>>>>> Stashed changes
+
+main
 const RULE_TYPES = [
     { key: 'daily', label: 'Hàng ngày', icon: 'calendar', desc: 'Uống mỗi ngày' },
     { key: 'every_x_days', label: 'Cách ngày', icon: 'swap-horizontal', desc: 'Uống mỗi X ngày' },
@@ -26,6 +27,41 @@ const RULE_TYPES = [
 
 const WEEKDAY_LABELS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
+const createDefaultTime = () => {
+    const date = new Date();
+    date.setHours(8, 0, 0, 0);
+    return date;
+};
+
+const formatTimeOfDay = (date) => {
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+};
+
+const formatDateYMD = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const parseDateYMD = (dateStr) => {
+    const [year, month, day] = String(dateStr || '').split('-').map(Number);
+    if (!year || !month || !day) {
+        return null;
+    }
+    const date = new Date(year, month - 1, day);
+    if (
+        date.getFullYear() !== year ||
+        date.getMonth() !== month - 1 ||
+        date.getDate() !== day
+    ) {
+        return null;
+    }
+    return date;
+};
+
 const AddScheduleScreen = ({ navigation, route }) => {
     const [medicines, setMedicines] = useState([]);
     const [selectedMedicine, setSelectedMedicine] = useState(null);
@@ -33,18 +69,16 @@ const AddScheduleScreen = ({ navigation, route }) => {
     const [ruleType, setRuleType] = useState('daily');
     const [intervalDays, setIntervalDays] = useState('2');
     const [selectedWeekdays, setSelectedWeekdays] = useState([1, 3, 5]); // Mon, Wed, Fri
-<<<<<<< Updated upstream
     const [timeOfDay, setTimeOfDay] = useState('08:00');
-    const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-=======
-
     const [startDate, setStartDate] = useState(toVietnamDateString());
 
     const [selectedTime, setSelectedTime] = useState(createDefaultTime);
     const [showTimePicker, setShowTimePicker] = useState(false);
+    const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
 
->>>>>>> Stashed changes
+main
     const [endDate, setEndDate] = useState('');
+    const [activeDatePicker, setActiveDatePicker] = useState(null);
     const [doseAmount, setDoseAmount] = useState('1');
     const [saving, setSaving] = useState(false);
 
@@ -69,13 +103,61 @@ const AddScheduleScreen = ({ navigation, route }) => {
         );
     };
 
+    const handleTimeChange = (_event, nextValue) => {
+        if (Platform.OS === 'android') {
+            setShowTimePicker(false);
+        }
+
+        if (nextValue) {
+            setSelectedTime(nextValue);
+        }
+    };
+
+    const openDatePicker = (field) => {
+        setActiveDatePicker(field);
+    };
+
+    const closeDatePicker = () => {
+        setActiveDatePicker(null);
+    };
+
+    const handleDateChange = (_event, nextValue) => {
+        if (!nextValue) {
+            if (Platform.OS === 'android') {
+                closeDatePicker();
+            }
+            return;
+        }
+
+        const pickedDate = formatDateYMD(nextValue);
+
+        if (activeDatePicker === 'start') {
+            setStartDate(pickedDate);
+
+            if (endDate) {
+                const endObj = parseDateYMD(endDate);
+                if (endObj && endObj < nextValue) {
+                    setEndDate(pickedDate);
+                }
+            }
+        }
+
+        if (activeDatePicker === 'end') {
+            setEndDate(pickedDate);
+        }
+
+        if (Platform.OS === 'android') {
+            closeDatePicker();
+        }
+    };
+
     const handleSave = async () => {
         if (!selectedMedicine) {
             Alert.alert('Lỗi', 'Vui lòng chọn thuốc');
             return;
         }
-        if (!timeOfDay) {
-            Alert.alert('Lỗi', 'Vui lòng nhập giờ uống');
+        if (!selectedTime) {
+            Alert.alert('Lỗi', 'Vui lòng chọn giờ uống');
             return;
         }
         if (ruleType === 'weekdays' && selectedWeekdays.length === 0) {
@@ -83,8 +165,18 @@ const AddScheduleScreen = ({ navigation, route }) => {
             return;
         }
 
+        if (endDate) {
+            const startObj = parseDateYMD(startDate);
+            const endObj = parseDateYMD(endDate);
+            if (!startObj || !endObj || endObj < startObj) {
+                Alert.alert('Lỗi', 'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu');
+                return;
+            }
+        }
+
         setSaving(true);
         try {
+            const timeOfDay = formatTimeOfDay(selectedTime);
             const data = {
                 medicine_id: selectedMedicine.id,
                 start_date: startDate,
@@ -102,16 +194,18 @@ const AddScheduleScreen = ({ navigation, route }) => {
             }
 
             await createSchedule(data);
-<<<<<<< Updated upstream
-=======
+
 
             await syncMedicationReminders().catch(() => null);
+
+
+            // Re-sync notifications to include the new schedule
             syncScheduleNotifications().catch(() => {});
 
 
->>>>>>> Stashed changes
+main
             Alert.alert('Thành công', 'Tạo lịch uống thuốc thành công', [
-                { text: 'OK', onPress: () => navigation.goBack() },
+                { text: 'Đóng', onPress: () => navigation.goBack() },
             ]);
         } catch (error) {
             Alert.alert('Lỗi', error.message || 'Không thể tạo lịch');
@@ -239,13 +333,54 @@ const AddScheduleScreen = ({ navigation, route }) => {
                     {/* Time */}
                     <View style={styles.field}>
                         <Text style={styles.label}>Giờ uống *</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="08:00"
-                            placeholderTextColor={COLORS.textMuted}
-                            value={timeOfDay}
-                            onChangeText={setTimeOfDay}
-                        />
+                        {Platform.OS === 'web' ? (
+                            <TextInput
+                                style={styles.input}
+                                placeholder="08:00"
+                                placeholderTextColor={COLORS.textMuted}
+                                value={formatTimeOfDay(selectedTime)}
+                                editable={false}
+                            />
+                        ) : (
+                            <>
+                                <TouchableOpacity
+                                    style={styles.input}
+                                    onPress={() => setShowTimePicker(true)}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text style={styles.inputText}>{formatTimeOfDay(selectedTime)}</Text>
+                                    <Ionicons name="time-outline" size={18} color={COLORS.textMuted} />
+                                </TouchableOpacity>
+
+                                {showTimePicker && Platform.OS === 'android' && (
+                                    <DateTimePicker
+                                        value={selectedTime}
+                                        mode="time"
+                                        is24Hour={true}
+                                        display="default"
+                                        onChange={handleTimeChange}
+                                    />
+                                )}
+
+                                {showTimePicker && Platform.OS === 'ios' && (
+                                    <View style={styles.timePickerContainer}>
+                                        <DateTimePicker
+                                            value={selectedTime}
+                                            mode="time"
+                                            is24Hour={true}
+                                            display="spinner"
+                                            onChange={handleTimeChange}
+                                        />
+                                        <TouchableOpacity
+                                            style={styles.timePickerDoneBtn}
+                                            onPress={() => setShowTimePicker(false)}
+                                        >
+                                            <Text style={styles.timePickerDoneText}>Xong</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                )}
+                            </>
+                        )}
                     </View>
 
                     {/* Dose Amount */}
@@ -265,25 +400,63 @@ const AddScheduleScreen = ({ navigation, route }) => {
                     <View style={styles.row}>
                         <View style={[styles.field, { flex: 1 }]}>
                             <Text style={styles.label}>Ngày bắt đầu</Text>
-                            <TextInput
+                            <TouchableOpacity
                                 style={styles.input}
-                                placeholder="YYYY-MM-DD"
-                                placeholderTextColor={COLORS.textMuted}
-                                value={startDate}
-                                onChangeText={setStartDate}
-                            />
+                                onPress={() => openDatePicker('start')}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.inputText}>{startDate}</Text>
+                                <Ionicons name="calendar-outline" size={18} color={COLORS.textMuted} />
+                            </TouchableOpacity>
                         </View>
                         <View style={[styles.field, { flex: 1 }]}>
                             <Text style={styles.label}>Ngày kết thúc</Text>
-                            <TextInput
+                            <TouchableOpacity
                                 style={styles.input}
-                                placeholder="Không giới hạn"
-                                placeholderTextColor={COLORS.textMuted}
-                                value={endDate}
-                                onChangeText={setEndDate}
-                            />
+                                onPress={() => openDatePicker('end')}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={endDate ? styles.inputText : styles.placeholderText}>
+                                    {endDate || 'Không giới hạn'}
+                                </Text>
+                                <Ionicons name="calendar-outline" size={18} color={COLORS.textMuted} />
+                            </TouchableOpacity>
+                            {!!endDate && (
+                                <TouchableOpacity
+                                    style={styles.clearDateBtn}
+                                    onPress={() => setEndDate('')}
+                                >
+                                    <Text style={styles.clearDateText}>Xóa ngày kết thúc</Text>
+                                </TouchableOpacity>
+                            )}
                         </View>
                     </View>
+
+                    {activeDatePicker && (
+                        <View style={styles.timePickerContainer}>
+                            <DateTimePicker
+                                value={
+                                    parseDateYMD(
+                                        activeDatePicker === 'start'
+                                            ? startDate
+                                            : endDate || startDate
+                                    ) || new Date()
+                                }
+                                mode="date"
+                                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                onChange={handleDateChange}
+                            />
+
+                            {Platform.OS === 'ios' && (
+                                <TouchableOpacity
+                                    style={styles.timePickerDoneBtn}
+                                    onPress={closeDatePicker}
+                                >
+                                    <Text style={styles.timePickerDoneText}>Xong</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    )}
 
                     {/* Save Button */}
                     <TouchableOpacity
@@ -465,6 +638,26 @@ const styles = StyleSheet.create({
     pickerEmptyText: {
         fontSize: SIZES.md,
         color: COLORS.textMuted,
+    },
+    timePickerContainer: {
+        marginTop: 8,
+        backgroundColor: COLORS.surface,
+        borderRadius: SIZES.radiusMD,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        padding: SIZES.paddingSM,
+    },
+    timePickerDoneBtn: {
+        alignSelf: 'flex-end',
+        paddingHorizontal: SIZES.paddingLG,
+        paddingVertical: SIZES.paddingSM,
+        borderRadius: SIZES.radiusSM,
+        backgroundColor: COLORS.primary,
+        marginTop: 4,
+    },
+    timePickerDoneText: {
+        color: COLORS.textWhite,
+        ...FONTS.semibold,
     },
     saveBtn: {
         flexDirection: 'row',

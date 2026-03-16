@@ -292,6 +292,58 @@ exports.googleLogin = async (req, res) => {
   }
 };
 
+exports.getAuthorizations = async (req, res) => {
+  try {
+    const authHeader = String(req.headers.authorization || "").trim();
+    const hasBearer = /^Bearer\s+/i.test(authHeader);
+    const token = hasBearer ? authHeader.replace(/^Bearer\s+/i, "") : "";
+
+    let isAuthorized = false;
+    let user = null;
+
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        isAuthorized = true;
+        user = {
+          id: decoded.id || null,
+          email: decoded.email || null,
+        };
+      } catch (_error) {
+        isAuthorized = false;
+      }
+    }
+
+    const tokenPreview = token
+      ? `${token.slice(0, 12)}...${token.slice(-6)}`
+      : null;
+
+    return res.json({
+      success: true,
+      data: [
+        {
+          name: "UserAuth",
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+          headerName: "Authorization",
+          valuePrefix: "Bearer ",
+          authorized: isAuthorized,
+        },
+      ],
+      currentAuthorization: {
+        provided: Boolean(token),
+        valid: isAuthorized,
+        tokenPreview,
+        user,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 exports.getProfile = async (req, res) => {
   try {
     const userId = req.user.id;

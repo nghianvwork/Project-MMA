@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { StatusBar, StyleSheet, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
@@ -21,12 +21,30 @@ import HomeScreen from './src/screens/HomeScreen';
 import ScheduleScreen from './src/screens/ScheduleScreen';
 import MedicineListScreen from './src/screens/MedicineListScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import HealthProfileScreen from './src/screens/HealthProfileScreen';
+import EditProfileScreen from './src/screens/EditProfileScreen';
+import FamilyMemberProfileScreen from './src/screens/FamilyMemberProfileScreen';
+import MedicationHistoryScreen from './src/screens/MedicationHistoryScreen';
+import NotificationSettingsScreen from './src/screens/NotificationSettingsScreen';
 import AddMedicineScreen from './src/screens/AddMedicineScreen';
+import BarcodeScannerScreen from './src/screens/BarcodeScannerScreen';
 import AddScheduleScreen from './src/screens/AddScheduleScreen';
 import AlarmScreen from './src/screens/AlarmScreen';
 
 // Theme
 import { COLORS, SIZES, FONTS } from './src/theme/theme';
+import { setAuthToken } from './src/api/api';
+import { syncMedicationReminders } from './src/services/medicationReminderService';
+
+// Notifications
+import {
+  requestPermissions,
+  getExpoPushToken,
+  setupNotificationListeners,
+  cancelAllNotifications,
+} from './src/services/notificationService';
+import { syncScheduleNotifications } from './src/services/scheduleNotificationManager';
+import { savePushToken, removePushToken } from './src/api/notificationApi';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -64,6 +82,7 @@ function MedicineStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MedicineList" component={MedicineListScreen} />
       <Stack.Screen name="AddMedicine" component={AddMedicineScreen} />
+      <Stack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} />
     </Stack.Navigator>
   );
 }
@@ -74,10 +93,29 @@ export default function App() {
   const [screen, setScreen] = useState('welcome');
   const [session, setSession] = useState(null);
   const [resetFlow, setResetFlow] = useState({ email: '', resetToken: '' });
+  const navigationRef = useRef(null);
+  const pushTokenRef = useRef(null);
 
-<<<<<<< Updated upstream
+  // Sync auth token with session (handles hot reload / re-render)
+  useEffect(() => {
+    if (session?.token) {
+      setAuthToken(session.token);
+    } else {
+      setAuthToken(null);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (!session?.token) {
+      return;
+    }
+
+    syncMedicationReminders().catch((error) => {
+      console.log('[Notifications] Sync failed:', error?.message || error);
+    });
+  }, [session?.token]);
+
   const handleLogout = () => {
-=======
   // Setup notification listeners (once, persistent across screens)
   useEffect(() => {
     const cleanup = setupNotificationListeners(navigationRef);
@@ -114,8 +152,12 @@ export default function App() {
     }
     await cancelAllNotifications();
 
->>>>>>> Stashed changes
+update-login-profile
+Stashed changes
+
+main
     setSession(null);
+    setAuthToken(null);
     setScreen('welcome');
   };
 
@@ -143,7 +185,13 @@ export default function App() {
     return (
       <LoginScreen
         onLoginSuccess={(nextSession) => {
+          console.log('[App] Login success, token:', nextSession?.token ? 'received' : 'MISSING');
           setSession(nextSession || null);
+          if (nextSession?.token) {
+            setAuthToken(nextSession.token);
+            // Initialize notifications after auth token is set
+            setTimeout(() => initNotifications(), 500);
+          }
           setScreen('home');
         }}
         onForgotPassword={() => {
@@ -215,17 +263,11 @@ export default function App() {
   function ProfileStack() {
     return (
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-<<<<<<< Updated upstream
         <Stack.Screen
           name="ProfileMain"
           component={ProfileScreen}
           initialParams={{ session, onLogout: handleLogout }}
-=======
-        <Stack.Screen name="ProfileMain">
-          {(props) => (
-            <ProfileScreen {...props} session={session} onLogout={handleLogout} />
-          )}
-        </Stack.Screen>
+        />
         <Stack.Screen
           name="HealthProfile"
           component={HealthProfileScreen}
@@ -250,7 +292,6 @@ export default function App() {
           name="NotificationSettings"
           component={NotificationSettingsScreen}
           initialParams={{ session }}
->>>>>>> Stashed changes
         />
       </Stack.Navigator>
     );
@@ -299,7 +340,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="MainTabs" component={MainTabs} />
