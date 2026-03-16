@@ -12,6 +12,13 @@ const insertMedicineForUser = async (userId, medicineData) => {
     low_stock_threshold
   } = medicineData;
 
+  const normalizedBarcode =
+    typeof barcode === 'string' ? barcode.trim() : barcode;
+  const barcodeValue =
+    normalizedBarcode === undefined || normalizedBarcode === null || normalizedBarcode === ''
+      ? ''
+      : normalizedBarcode;
+
   const [result] = await db.query(
     `INSERT INTO Medicines 
      (user_id, name, barcode, dosage, form, note, stock_quantity, stock_unit, low_stock_threshold) 
@@ -19,7 +26,7 @@ const insertMedicineForUser = async (userId, medicineData) => {
     [
       userId,
       name,
-      barcode || null,
+      barcodeValue,
       dosage || null,
       form || null,
       note || null,
