@@ -95,10 +95,8 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// Response interceptor
 api.interceptors.response.use(
-
-    (response) => response,
+    (response) => response.data,
     (error) => {
         const config = error.config || {};
         const shouldRetry =
@@ -157,7 +155,34 @@ api.interceptors.response.use(
 
         console.error('[API Error]', error.response?.data || error.message);
         return Promise.reject(error.response?.data || error);
+=======
+  (response) => {
+    activeBaseIndex = Number(response?.config?._baseIndex ?? activeBaseIndex);
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error?.config;
+
+    if (originalRequest && shouldRetryWithNextBaseUrl(error)) {
+      const currentBaseIndex = Number(originalRequest._baseIndex ?? 0);
+      const nextBaseIndex = currentBaseIndex + 1;
+      const retryCount = Number(originalRequest._retryCount || 0);
+
+      if (nextBaseIndex < API_BASE_URLS.length && retryCount < MAX_BASE_RETRIES) {
+        originalRequest._baseIndex = nextBaseIndex;
+        originalRequest._retryCount = retryCount + 1;
+        originalRequest.baseURL = API_BASE_URLS[nextBaseIndex];
+        console.log(
+          `[API] Retry with fallback base URL: ${API_BASE_URLS[nextBaseIndex]}`,
+        );
+        return api.request(originalRequest);
+      }
+ Stashed changes
     }
+
+    console.error('[API Error]', error.response?.data || error.message);
+    return Promise.reject(error.response?.data || error);
+  },
 );
 
 export default api;

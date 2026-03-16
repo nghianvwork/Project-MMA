@@ -17,6 +17,9 @@ const EMPTY_HEALTH_PROFILE = {
   bmiStatus: "",
   heightCm: "",
   weightKg: "",
+  conditions: [],
+  allergies: [],
+  surgeries: [],
 };
 
 const toTextOrEmpty = (value) => {
@@ -47,16 +50,24 @@ const getBmiStatus = (bmi) => {
 const normalizeHealthProfile = (profileData) => {
   const heightCm = toNumberOrEmpty(profileData?.height_cm);
   const weightKg = toNumberOrEmpty(profileData?.weight_kg);
+  const bmiFromApi = toNumberOrEmpty(profileData?.bmi);
   const bmi =
-    Number.isFinite(heightCm) && heightCm > 0 && Number.isFinite(weightKg) && weightKg > 0
+    Number.isFinite(bmiFromApi) && bmiFromApi > 0
+      ? Number(bmiFromApi.toFixed(1))
+      : Number.isFinite(heightCm) && heightCm > 0 && Number.isFinite(weightKg) && weightKg > 0
       ? Number((weightKg / ((heightCm / 100) * (heightCm / 100))).toFixed(1))
       : "";
+  const bmiStatusApi = toTextOrEmpty(profileData?.bmi_status);
+  const bmiStatus = bmiStatusApi || getBmiStatus(bmi);
 
   return {
     bmi: bmi === "" ? "" : String(bmi),
-    bmiStatus: getBmiStatus(bmi),
+    bmiStatus,
     heightCm: heightCm === "" ? "" : String(heightCm),
     weightKg: weightKg === "" ? "" : String(weightKg),
+    conditions: Array.isArray(profileData?.conditions) ? profileData.conditions : [],
+    allergies: Array.isArray(profileData?.allergies) ? profileData.allergies : [],
+    surgeries: Array.isArray(profileData?.surgeries) ? profileData.surgeries : [],
   };
 };
 
@@ -78,6 +89,41 @@ const EmptySection = ({ text }) => (
     <Text style={styles.emptyText}>{text}</Text>
   </View>
 );
+
+const formatDate = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+const formatRecordSubtitle = (record) => {
+  const parts = [];
+  const diagnosed = formatDate(record?.diagnosed_date);
+  if (diagnosed) parts.push(diagnosed);
+  const hospital = toTextOrEmpty(record?.hospital);
+  if (hospital) parts.push(hospital);
+  const severity = toTextOrEmpty(record?.severity);
+  if (severity) parts.push(severity);
+  return parts.join(" • ");
+};
+
+const RecordItem = ({ record }) => {
+  const title = toTextOrEmpty(record?.title);
+  const description = toTextOrEmpty(record?.description);
+  const subtitle = formatRecordSubtitle(record);
+
+  return (
+    <View style={styles.recordCard}>
+      <Text style={styles.recordTitle}>{title}</Text>
+      {subtitle ? <Text style={styles.recordMeta}>{subtitle}</Text> : null}
+      {description ? <Text style={styles.recordDesc}>{description}</Text> : null}
+    </View>
+  );
+};
 
 export default function HealthProfileScreen({ route, navigation }) {
   const session = route?.params?.session || null;
@@ -104,7 +150,7 @@ export default function HealthProfileScreen({ route, navigation }) {
       }
 
       try {
-        const { response, data } = await requestJsonWithFallback("/api/user/profile", {
+        const { response, data } = await requestJsonWithFallback("/api/health-profile", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -121,7 +167,8 @@ export default function HealthProfileScreen({ route, navigation }) {
           return;
         }
 
-        setHealthProfile(normalizeHealthProfile(data));
+        const normalized = normalizeHealthProfile(data?.data || data);
+        setHealthProfile(normalized);
         setLoading(false);
       } catch (_error) {
         if (!mounted) {
@@ -181,7 +228,13 @@ export default function HealthProfileScreen({ route, navigation }) {
               <MaterialCommunityIcons name="stethoscope" size={16} color="#6486d8" />
               <Text style={styles.sectionTitle}>Bệnh lý nền</Text>
             </View>
-            <EmptySection text="Backend chưa trả dữ liệu bệnh lý nền." />
+            {healthProfile.conditions.length === 0 ? (
+              <EmptySection text="Chưa có dữ liệu bệnh lý nền." />
+            ) : (
+              healthProfile.conditions.map((item) => (
+                <RecordItem key={`condition-${item.id || item.title}`} record={item} />
+              ))
+            )}
           </View>
 
           <View style={styles.section}>
@@ -189,7 +242,13 @@ export default function HealthProfileScreen({ route, navigation }) {
               <Ionicons name="warning-outline" size={16} color="#ef6f62" />
               <Text style={styles.sectionTitle}>Dị ứng</Text>
             </View>
-            <EmptySection text="Backend chưa trả dữ liệu dị ứng." />
+            {healthProfile.allergies.length === 0 ? (
+              <EmptySection text="Chưa có dữ liệu dị ứng." />
+            ) : (
+              healthProfile.allergies.map((item) => (
+                <RecordItem key={`allergy-${item.id || item.title}`} record={item} />
+              ))
+            )}
           </View>
 
           <View style={styles.section}>
@@ -197,9 +256,15 @@ export default function HealthProfileScreen({ route, navigation }) {
               <MaterialCommunityIcons name="star-four-points-outline" size={16} color="#b35ce0" />
               <Text style={styles.sectionTitle}>Tiền sử phẫu thuật</Text>
             </View>
-            <View style={styles.historyEmpty}>
-              <Text style={styles.emptyText}>Backend chưa trả dữ liệu tiền sử phẫu thuật.</Text>
-            </View>
+            {healthProfile.surgeries.length === 0 ? (
+              <View style={styles.historyEmpty}>
+                <Text style={styles.emptyText}>Chưa có dữ liệu tiền sử phẫu thuật.</Text>
+              </View>
+            ) : (
+              healthProfile.surgeries.map((item) => (
+                <RecordItem key={`surgery-${item.id || item.title}`} record={item} />
+              ))
+            )}
           </View>
         </ScrollView>
 
@@ -342,6 +407,29 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     paddingHorizontal: 16,
     paddingVertical: 18,
+  },
+  recordCard: {
+    borderRadius: 16,
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    marginBottom: 10,
+  },
+  recordTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1e2d45",
+  },
+  recordMeta: {
+    marginTop: 4,
+    fontSize: 12,
+    color: "#8c99ab",
+    fontWeight: "600",
+  },
+  recordDesc: {
+    marginTop: 6,
+    fontSize: 13,
+    color: "#6c7a8c",
   },
   footer: {
     position: "absolute",

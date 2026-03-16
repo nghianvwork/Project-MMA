@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     TextInput, StatusBar, Alert, KeyboardAvoidingView, Platform,
@@ -11,12 +11,14 @@ import { COLORS, FONTS, SIZES, SHADOWS } from '../theme/theme';
 import { createSchedule } from '../api/scheduleApi';
 import { getMedicines } from '../api/medicineApi';
 
+
 import { syncMedicationReminders } from '../services/medicationReminderService';
 import { toVietnamDateString } from '../utils/dateTime';
-=======
+
 import { syncScheduleNotifications } from '../services/scheduleNotificationManager';
 
 
+main
 const RULE_TYPES = [
     { key: 'daily', label: 'Hàng ngày', icon: 'calendar', desc: 'Uống mỗi ngày' },
     { key: 'every_x_days', label: 'Cách ngày', icon: 'swap-horizontal', desc: 'Uống mỗi X ngày' },
@@ -67,7 +69,6 @@ const AddScheduleScreen = ({ navigation, route }) => {
     const [ruleType, setRuleType] = useState('daily');
     const [intervalDays, setIntervalDays] = useState('2');
     const [selectedWeekdays, setSelectedWeekdays] = useState([1, 3, 5]); // Mon, Wed, Fri
-
     const [timeOfDay, setTimeOfDay] = useState('08:00');
     const [startDate, setStartDate] = useState(toVietnamDateString());
 
@@ -75,6 +76,7 @@ const AddScheduleScreen = ({ navigation, route }) => {
     const [showTimePicker, setShowTimePicker] = useState(false);
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
 
+main
     const [endDate, setEndDate] = useState('');
     const [activeDatePicker, setActiveDatePicker] = useState(null);
     const [doseAmount, setDoseAmount] = useState('1');
@@ -193,13 +195,15 @@ const AddScheduleScreen = ({ navigation, route }) => {
 
             await createSchedule(data);
 
+
             await syncMedicationReminders().catch(() => null);
-=======
+
 
             // Re-sync notifications to include the new schedule
             syncScheduleNotifications().catch(() => {});
 
 
+main
             Alert.alert('Thành công', 'Tạo lịch uống thuốc thành công', [
                 { text: 'Đóng', onPress: () => navigation.goBack() },
             ]);
