@@ -9,6 +9,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../theme/theme';
 import { createSchedule } from '../api/scheduleApi';
 import { getMedicines } from '../api/medicineApi';
+import { syncMedicationReminders } from '../services/medicationReminderService';
+import { toVietnamDateString } from '../utils/dateTime';
 
 const RULE_TYPES = [
     { key: 'daily', label: 'Hàng ngày', icon: 'calendar', desc: 'Uống mỗi ngày' },
@@ -26,7 +28,7 @@ const AddScheduleScreen = ({ navigation, route }) => {
     const [intervalDays, setIntervalDays] = useState('2');
     const [selectedWeekdays, setSelectedWeekdays] = useState([1, 3, 5]); // Mon, Wed, Fri
     const [timeOfDay, setTimeOfDay] = useState('08:00');
-    const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+    const [startDate, setStartDate] = useState(toVietnamDateString());
     const [endDate, setEndDate] = useState('');
     const [doseAmount, setDoseAmount] = useState('1');
     const [saving, setSaving] = useState(false);
@@ -85,6 +87,7 @@ const AddScheduleScreen = ({ navigation, route }) => {
             }
 
             await createSchedule(data);
+            await syncMedicationReminders().catch(() => null);
             Alert.alert('Thành công', 'Tạo lịch uống thuốc thành công', [
                 { text: 'OK', onPress: () => navigation.goBack() },
             ]);

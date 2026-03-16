@@ -23,6 +23,7 @@ const medicineRoutes = require('./routes/medicineRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
 const familyRoutes = require("./routes/familyRoutes");
 const medicationLogRoutes = require("./routes/medicationLogRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -83,6 +84,7 @@ app.use('/api/medicines', medicineRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use("/api/family-members", familyRoutes);
 app.use("/api/medication-logs", medicationLogRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

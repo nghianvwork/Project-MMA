@@ -96,14 +96,27 @@ const getNativeDevCandidates = () => {
     .filter(Boolean);
 };
 
-export const API_BASE_CANDIDATES = [
-  ...new Set([
-    ...getEnvironmentCandidates(),
-    ...getNativeDevCandidates(),
-    normalizeApiBaseUrl(DEFAULT_API_BASE_URL),
-    ...getWebCandidates(),
-  ]),
-];
+const getOrderedApiBaseCandidates = () => {
+  if (Platform.OS === "web") {
+    return [
+      ...new Set([
+        ...getEnvironmentCandidates(),
+        ...getWebCandidates(),
+        normalizeApiBaseUrl(DEFAULT_API_BASE_URL),
+      ]),
+    ];
+  }
+
+  return [
+    ...new Set([
+      ...getNativeDevCandidates(),
+      ...getEnvironmentCandidates(),
+      normalizeApiBaseUrl(DEFAULT_API_BASE_URL),
+    ]),
+  ];
+};
+
+export const API_BASE_CANDIDATES = getOrderedApiBaseCandidates();
 
 export const formatApiBaseCandidates = () => API_BASE_CANDIDATES.join(", ");
 

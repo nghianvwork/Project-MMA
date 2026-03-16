@@ -310,14 +310,26 @@ const getSchedulesByDate = async (req, res) => {
     
     // Lấy tất cả lịch còn hiệu lực tại ngày này
     const [schedules] = await db.query(
-      `SELECT s.*, m.name as medicine_name, m.dosage, m.form, m.stock_quantity
+      `SELECT s.*, m.name as medicine_name, m.dosage, m.form, m.stock_quantity,
+              ml.id AS medication_log_id, ml.status AS medication_log_status,
+              ml.taken_time AS medication_taken_time, ml.scheduled_time AS medication_scheduled_time
        FROM Schedules s
        JOIN Medicines m ON s.medicine_id = m.id
+       LEFT JOIN (
+         SELECT latest.id, latest.schedule_id, latest.status, latest.taken_time, latest.scheduled_time
+         FROM Medication_Logs latest
+         INNER JOIN (
+           SELECT schedule_id, MAX(id) AS latest_id
+           FROM Medication_Logs
+           WHERE user_id = ? AND DATE(scheduled_time) = DATE(?)
+           GROUP BY schedule_id
+         ) picked ON picked.latest_id = latest.id
+       ) ml ON ml.schedule_id = s.id
        WHERE s.user_id = ? 
          AND s.start_date <= ?
          AND (s.end_date IS NULL OR s.end_date >= ?)
        ORDER BY s.time_of_day ASC`,
-      [userId, date, date]
+      [userId, date, userId, date, date]
     );
     
     // Lọc theo rule

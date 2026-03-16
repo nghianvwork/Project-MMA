@@ -9,14 +9,20 @@ import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../theme/theme';
 import { getSchedulesByDate } from '../api/scheduleApi';
 import { updateStock } from '../api/medicineApi';
+import { createMedicationLog } from '../api/medicationLogApi';
 import DaySelector from '../components/DaySelector';
 import ScheduleCard, { STATUS } from '../components/ScheduleCard';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { toVietnamDateString, toVietnamSqlDateTime } from '../utils/dateTime';
+
+const toSqlDateTime = (date, timeOfDay) => {
+    const safeTime = String(timeOfDay || '00:00:00');
+    const normalizedTime = safeTime.length === 5 ? `${safeTime}:00` : safeTime;
+    return `${date} ${normalizedTime}`;
+};
 
 const ScheduleScreen = ({ navigation }) => {
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedDate, setSelectedDate] = useState(toVietnamDateString());
     const [schedules, setSchedules] = useState([]);
-    const [takenMap, setTakenMap] = useState({});
     const [snoozedMap, setSnoozedMap] = useState({});
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -25,11 +31,6 @@ const ScheduleScreen = ({ navigation }) => {
         try {
             const res = await getSchedulesByDate(selectedDate).catch(() => ({ data: [] }));
             setSchedules(res.data || []);
-
-            // Load taken status from local storage
-            const takenStr = await AsyncStorage.getItem(`taken_${selectedDate}`);
-            if (takenStr) setTakenMap(JSON.parse(takenStr));
-            else setTakenMap({});
         } catch (error) {
             console.log('Error loading schedules:', error);
         } finally {
@@ -51,16 +52,19 @@ const ScheduleScreen = ({ navigation }) => {
 
     const handleTake = async (schedule) => {
         try {
+            const response = await createMedicationLog({
+                schedule_id: schedule.id,
+                medicine_id: schedule.medicine_id,
+                scheduled_time: toSqlDateTime(selectedDate, schedule.time_of_day),
+                taken_time: toVietnamSqlDateTime(),
+                status: 'taken_on_time',
+            });
+
             // Deduct stock
-            if (schedule.stock_quantity !== undefined) {
+            if (response.meta?.created !== false && schedule.stock_quantity !== undefined) {
                 const newQty = Math.max(0, schedule.stock_quantity - (schedule.dose_amount || 1));
                 await updateStock(schedule.medicine_id, newQty).catch(() => { });
             }
-
-            // Mark as taken locally
-            const newTakenMap = { ...takenMap, [schedule.id]: true };
-            setTakenMap(newTakenMap);
-            await AsyncStorage.setItem(`taken_${selectedDate}`, JSON.stringify(newTakenMap));
 
             // Remove from snoozed if it was snoozed
             const newSnoozedMap = { ...snoozedMap };
@@ -79,7 +83,7 @@ const ScheduleScreen = ({ navigation }) => {
     };
 
     const getStatus = (schedule) => {
-        if (takenMap[schedule.id]) return STATUS.TAKEN;
+        if (schedule.medication_log_id) return STATUS.TAKEN;
         if (snoozedMap[schedule.id]) return STATUS.SNOOZED;
         return STATUS.PENDING;
     };

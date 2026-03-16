@@ -9,6 +9,9 @@ const ensureMedicineOwnership = async (medicineId, userId) => {
 };
 
 const ensureScheduleOwnership = async (scheduleId, userId) => {
+  if (!scheduleId) {
+    return true;
+  }
   const [schedules] = await db.query(
     "SELECT id FROM Schedules WHERE id = ? AND user_id = ?",
     [scheduleId, userId]
@@ -21,35 +24,40 @@ const getMedicationLogs = async (req, res) => {
     const userId = req.userId;
     const { status, from, to, schedule_id, medicine_id } = req.query;
 
-    let query = "SELECT * FROM Medication_Logs WHERE user_id = ?";
+    let query = `
+      SELECT ml.*, m.name AS medicine_name, m.dosage, m.form
+      FROM Medication_Logs ml
+      LEFT JOIN Medicines m ON m.id = ml.medicine_id
+      WHERE ml.user_id = ?
+    `;
     const params = [userId];
 
     if (status) {
-      query += " AND status = ?";
+      query += " AND ml.status = ?";
       params.push(status);
     }
 
     if (schedule_id) {
-      query += " AND schedule_id = ?";
+      query += " AND ml.schedule_id = ?";
       params.push(schedule_id);
     }
 
     if (medicine_id) {
-      query += " AND medicine_id = ?";
+      query += " AND ml.medicine_id = ?";
       params.push(medicine_id);
     }
 
     if (from) {
-      query += " AND scheduled_time >= ?";
+      query += " AND ml.scheduled_time >= ?";
       params.push(from);
     }
 
     if (to) {
-      query += " AND scheduled_time <= ?";
+      query += " AND ml.scheduled_time <= ?";
       params.push(to);
     }
 
-    query += " ORDER BY scheduled_time DESC";
+    query += " ORDER BY ml.scheduled_time DESC";
 
     const [logs] = await db.query(query, params);
     res.json({ success: true, data: logs, total: logs.length });
@@ -85,6 +93,29 @@ const createMedicationLog = async (req, res) => {
       return res.status(400).json({ success: false, message: "schedule_id không hợp lệ" });
     }
 
+    if (schedule_id) {
+      const [existingLogs] = await db.query(
+        `SELECT ml.*, m.name AS medicine_name, m.dosage, m.form
+         FROM Medication_Logs ml
+         LEFT JOIN Medicines m ON m.id = ml.medicine_id
+         WHERE ml.user_id = ?
+           AND ml.schedule_id = ?
+           AND DATE(ml.scheduled_time) = DATE(?)
+         ORDER BY ml.id DESC
+         LIMIT 1`,
+        [userId, schedule_id, scheduled_time]
+      );
+
+      if (existingLogs.length > 0) {
+        return res.json({
+          success: true,
+          created: false,
+          message: "Lịch sử uống thuốc cho lịch này trong ngày đã tồn tại",
+          data: existingLogs[0],
+        });
+      }
+    }
+
     const [result] = await db.query(
       `INSERT INTO Medication_Logs
       (schedule_id, medicine_id, user_id, scheduled_time, taken_time, status, note, side_effect)
@@ -101,12 +132,17 @@ const createMedicationLog = async (req, res) => {
       ]
     );
 
-    const [logs] = await db.query("SELECT * FROM Medication_Logs WHERE id = ?", [
-      result.insertId,
-    ]);
+    const [logs] = await db.query(
+      `SELECT ml.*, m.name AS medicine_name, m.dosage, m.form
+       FROM Medication_Logs ml
+       LEFT JOIN Medicines m ON m.id = ml.medicine_id
+       WHERE ml.id = ?`,
+      [result.insertId]
+    );
 
     res.status(201).json({
       success: true,
+      created: true,
       message: "Tạo lịch sử uống thuốc thành công",
       data: logs[0],
     });

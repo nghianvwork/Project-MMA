@@ -114,6 +114,7 @@ Ví dụ: Authorization: Bearer <your_token>
           patient_user_id: { type: "string", example: "user123" },
           caregiver_user_id: { type: "string", example: "user456" },
           permission: { type: "string", example: "view" },
+          relation: { type: "string", example: "Bố" },
           caregiver_email: { type: "string", example: "caregiver@gmail.com" },
           caregiver_name: { type: "string", example: "Nguyen Van B" },
           photo_url: { type: "string", example: "https://..." },

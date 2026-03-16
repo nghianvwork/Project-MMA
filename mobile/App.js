@@ -21,6 +21,11 @@ import HomeScreen from './src/screens/HomeScreen';
 import ScheduleScreen from './src/screens/ScheduleScreen';
 import MedicineListScreen from './src/screens/MedicineListScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import HealthProfileScreen from './src/screens/HealthProfileScreen';
+import EditProfileScreen from './src/screens/EditProfileScreen';
+import FamilyMemberProfileScreen from './src/screens/FamilyMemberProfileScreen';
+import MedicationHistoryScreen from './src/screens/MedicationHistoryScreen';
+import NotificationSettingsScreen from './src/screens/NotificationSettingsScreen';
 import AddMedicineScreen from './src/screens/AddMedicineScreen';
 import AddScheduleScreen from './src/screens/AddScheduleScreen';
 import AlarmScreen from './src/screens/AlarmScreen';
@@ -28,6 +33,7 @@ import AlarmScreen from './src/screens/AlarmScreen';
 // Theme
 import { COLORS, SIZES, FONTS } from './src/theme/theme';
 import { setAuthToken } from './src/api/api';
+import { syncMedicationReminders } from './src/services/medicationReminderService';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -84,6 +90,16 @@ export default function App() {
       setAuthToken(null);
     }
   }, [session]);
+
+  useEffect(() => {
+    if (!session?.token) {
+      return;
+    }
+
+    syncMedicationReminders().catch((error) => {
+      console.log('[Notifications] Sync failed:', error?.message || error);
+    });
+  }, [session?.token]);
 
   const handleLogout = () => {
     setSession(null);
@@ -195,6 +211,31 @@ export default function App() {
           name="ProfileMain"
           component={ProfileScreen}
           initialParams={{ session, onLogout: handleLogout }}
+        />
+        <Stack.Screen
+          name="HealthProfile"
+          component={HealthProfileScreen}
+          initialParams={{ session }}
+        />
+        <Stack.Screen
+          name="EditProfile"
+          component={EditProfileScreen}
+          initialParams={{ session }}
+        />
+        <Stack.Screen
+          name="FamilyMemberProfile"
+          component={FamilyMemberProfileScreen}
+          initialParams={{ session }}
+        />
+        <Stack.Screen
+          name="MedicationHistory"
+          component={MedicationHistoryScreen}
+          initialParams={{ session }}
+        />
+        <Stack.Screen
+          name="NotificationSettings"
+          component={NotificationSettingsScreen}
+          initialParams={{ session }}
         />
       </Stack.Navigator>
     );
