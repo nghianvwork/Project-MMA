@@ -75,3 +75,9 @@ CREATE TABLE IF NOT EXISTS DataAccessGrants (
   INDEX idx_grants_user (user_id),
   INDEX idx_grants_member (member_id)
 );
+
+-- Ensure barcode field exists for Medicines table on existing databases
+ALTER TABLE Medicines
+  ADD COLUMN IF NOT EXISTS barcode VARCHAR(100) NULL AFTER name;
+
+CREATE INDEX IF NOT EXISTS idx_barcode ON Medicines (barcode);

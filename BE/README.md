@@ -66,6 +66,7 @@ x-user-id: <user_id>
 - `GET /api/medicines` - Lấy danh sách thuốc
 - `GET /api/medicines/:id` - Chi tiết thuốc
 - `POST /api/medicines` - Thêm thuốc mới
+- `POST /api/medicines/with-barcode` - Thêm thuốc mới (bắt buộc barcode)
 - `PUT /api/medicines/:id` - Cập nhật thuốc
 - `PATCH /api/medicines/:id/stock` - Cập nhật tồn kho
 - `DELETE /api/medicines/:id` - Xóa thuốc
@@ -142,8 +143,22 @@ curl -X POST http://localhost:3000/api/medicines \
   -H "x-user-id: user123" \
   -d '{
     "name": "Paracetamol",
+    "barcode": "8934567890123",
     "dosage": "500mg",
     "stock_quantity": 20
+  }'
+```
+
+### Thêm thuốc bắt buộc có barcode
+```bash
+curl -X POST http://localhost:3000/api/medicines/with-barcode \
+  -H "Content-Type: application/json" \
+  -H "x-user-id: user123" \
+  -d '{
+    "name": "Amoxicillin",
+    "barcode": "8931234567890",
+    "dosage": "250mg",
+    "stock_quantity": 10
   }'
 ```
 
