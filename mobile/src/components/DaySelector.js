@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES } from '../theme/theme';
 import { parseVietnamSqlDateTime, toVietnamDateString } from '../utils/dateTime';
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
 const parseSelectedDate = (value) => {
     const parsed = parseVietnamSqlDateTime(value);
@@ -42,9 +42,18 @@ const DaySelector = ({ selectedDate, onDateChange }) => {
     };
 
     const formatMonthYear = () => {
+
         const date = selectedDate ? parseSelectedDate(selectedDate) : new Date();
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+=======
+        const date = selectedDate ? new Date(selectedDate) : new Date();
+        return date.toLocaleDateString('vi-VN', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+        });
+
     };
 
     const goToPrevWeek = () => {

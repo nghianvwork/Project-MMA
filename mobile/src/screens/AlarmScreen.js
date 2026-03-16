@@ -1,9 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity, StatusBar, Animated, Dimensions,
+    View, Text, StyleSheet, TouchableOpacity, StatusBar, Animated, Dimensions, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES } from '../theme/theme';
+import { updateStock } from '../api/medicineApi';
+import { createMedicationLog } from '../api/medicationLogApi';
+import { scheduleSnoozeNotification } from '../services/notificationService';
+import { cancelScheduleNotification } from '../services/scheduleNotificationManager';
 
 const { width, height } = Dimensions.get('window');
 
@@ -11,6 +15,22 @@ const AlarmScreen = ({ navigation, route }) => {
     const schedule = route.params?.schedule || {};
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
+    const [processing, setProcessing] = useState(false);
+
+    const parseScheduleTimeToday = (timeStr) => {
+        const [hour, minute] = String(timeStr || '00:00:00').split(':').map(Number);
+        const now = new Date();
+        const scheduled = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate(),
+            hour || 0,
+            minute || 0,
+            0,
+            0,
+        );
+        return Number.isNaN(scheduled.getTime()) ? null : scheduled;
+    };
 
     useEffect(() => {
         // Fade in
@@ -39,14 +59,65 @@ const AlarmScreen = ({ navigation, route }) => {
         return () => pulse.stop();
     }, []);
 
-    const handleTake = () => {
-        // TODO: Mark as taken + deduct stock
-        navigation.goBack();
+    const handleTake = async () => {
+        if (processing) return;
+
+        const scheduledAt = parseScheduleTimeToday(schedule.time_of_day);
+        if (scheduledAt && new Date() < scheduledAt) {
+            const hh = String(scheduledAt.getHours()).padStart(2, '0');
+            const mm = String(scheduledAt.getMinutes()).padStart(2, '0');
+            Alert.alert('Chưa đến giờ', `Chưa đến giờ uống thuốc (${hh}:${mm}).`);
+            return;
+        }
+
+        setProcessing(true);
+        try {
+            // Log medication as taken
+            await createMedicationLog({
+                schedule_id: schedule.id,
+                medicine_id: schedule.medicine_id,
+                scheduled_time: schedule.time_of_day || new Date().toISOString(),
+                taken_time: new Date().toISOString(),
+                status: 'taken_on_time',
+            }).catch((err) => console.log('Log failed:', err.message));
+
+            // Deduct stock
+            if (schedule.stock_quantity !== undefined) {
+                const newQty = Math.max(0, schedule.stock_quantity - (schedule.dose_amount || 1));
+                await updateStock(schedule.medicine_id, newQty).catch(() => {});
+            }
+
+            // Cancel this schedule's notification
+            if (schedule.id) {
+                await cancelScheduleNotification(schedule.id).catch(() => {});
+            }
+
+            navigation.goBack();
+        } catch (error) {
+            Alert.alert('Lỗi', 'Không thể ghi nhận. Vui lòng thử lại.');
+        } finally {
+            setProcessing(false);
+        }
     };
 
-    const handleSnooze = () => {
-        // TODO: Schedule notification again in 10 minutes
-        navigation.goBack();
+    const handleSnooze = async () => {
+        if (processing) return;
+        setProcessing(true);
+        try {
+            await scheduleSnoozeNotification({
+                scheduleId: schedule.id,
+                medicineId: schedule.medicine_id,
+                medicineName: schedule.medicine_name,
+                dosage: schedule.dosage,
+                doseAmount: schedule.dose_amount,
+                form: schedule.form,
+            });
+            navigation.goBack();
+        } catch (error) {
+            Alert.alert('Lỗi', 'Không thể đặt lại nhắc nhở.');
+        } finally {
+            setProcessing(false);
+        }
     };
 
     return (

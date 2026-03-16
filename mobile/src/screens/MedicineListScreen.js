@@ -1,13 +1,22 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    TextInput, RefreshControl, StatusBar, Alert, ActionSheetIOS,
+    ActionSheetIOS,
+    Alert,
+    Platform,
+    RefreshControl,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { COLORS, FONTS, SIZES, SHADOWS } from '../theme/theme';
-import { getMedicines, deleteMedicine } from '../api/medicineApi';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, FONTS, SHADOWS, SIZES } from '../theme/theme';
+import { deleteMedicine, getMedicines } from '../api/medicineApi';
 import MedicineCard from '../components/MedicineCard';
 import FilterTabs from '../components/FilterTabs';
 
@@ -21,7 +30,11 @@ const MedicineListScreen = ({ navigation }) => {
     const loadMedicines = async () => {
         try {
             const params = {};
-            if (search) params.search = search;
+
+            if (search) {
+                params.search = search;
+            }
+
             const res = await getMedicines(params).catch(() => ({ data: [] }));
             setMedicines(res.data || []);
         } catch (error) {
@@ -34,7 +47,7 @@ const MedicineListScreen = ({ navigation }) => {
     useFocusEffect(
         useCallback(() => {
             loadMedicines();
-        }, [search])
+        }, [search]),
     );
 
     const onRefresh = async () => {
@@ -43,18 +56,27 @@ const MedicineListScreen = ({ navigation }) => {
         setRefreshing(false);
     };
 
-    const filteredMedicines = medicines.filter((med) => {
-        if (activeFilter === 'low') return med.stock_quantity > 0 && med.stock_quantity <= (med.low_stock_threshold || 5);
-        if (activeFilter === 'out') return med.stock_quantity === 0;
+    const filteredMedicines = medicines.filter((medicine) => {
+        if (activeFilter === 'low') {
+            return medicine.stock_quantity > 0
+                && medicine.stock_quantity <= (medicine.low_stock_threshold || 5);
+        }
+
+        if (activeFilter === 'out') {
+            return medicine.stock_quantity === 0;
+        }
+
         return true;
     });
 
-    const getFilterCounts = () => {
-        const all = medicines.length;
-        const low = medicines.filter(m => m.stock_quantity > 0 && m.stock_quantity <= (m.low_stock_threshold || 5)).length;
-        const out = medicines.filter(m => m.stock_quantity === 0).length;
-        return { all, low, out };
-    };
+    const getFilterCounts = () => ({
+        all: medicines.length,
+        low: medicines.filter(
+            (medicine) => medicine.stock_quantity > 0
+                && medicine.stock_quantity <= (medicine.low_stock_threshold || 5),
+        ).length,
+        out: medicines.filter((medicine) => medicine.stock_quantity === 0).length,
+    });
 
     const counts = getFilterCounts();
 
@@ -64,7 +86,49 @@ const MedicineListScreen = ({ navigation }) => {
         { key: 'out', label: 'Hết hàng', count: counts.out, dotColor: COLORS.danger },
     ];
 
+    const handleDelete = async (medicine) => {
+        try {
+            await deleteMedicine(medicine.id);
+            loadMedicines();
+        } catch (error) {
+            Alert.alert('Lỗi', error.message || 'Không thể xóa thuốc');
+        }
+    };
+
     const handleMenuPress = (medicine) => {
+        if (Platform.OS !== 'ios') {
+            Alert.alert(
+                medicine.name,
+                'Chọn thao tác với thuốc này',
+                [
+                    {
+                        text: 'Chỉnh sửa',
+                        onPress: () => navigation.navigate('AddMedicine', { medicine, isEdit: true }),
+                    },
+                    {
+                        text: 'Xóa',
+                        style: 'destructive',
+                        onPress: () => {
+                            Alert.alert(
+                                'Xóa thuốc',
+                                `Bạn có chắc muốn xóa "${medicine.name}"?`,
+                                [
+                                    { text: 'Hủy', style: 'cancel' },
+                                    {
+                                        text: 'Xóa',
+                                        style: 'destructive',
+                                        onPress: () => handleDelete(medicine),
+                                    },
+                                ],
+                            );
+                        },
+                    },
+                    { text: 'Hủy', style: 'cancel' },
+                ],
+            );
+            return;
+        }
+
         ActionSheetIOS.showActionSheetWithOptions(
             {
                 options: ['Hủy', 'Chỉnh sửa', 'Xóa'],
@@ -84,20 +148,17 @@ const MedicineListScreen = ({ navigation }) => {
                             {
                                 text: 'Xóa',
                                 style: 'destructive',
-                                onPress: async () => {
-                                    try {
-                                        await deleteMedicine(medicine.id);
-                                        loadMedicines();
-                                    } catch (error) {
-                                        Alert.alert('Lỗi', error.message || 'Không thể xóa thuốc');
-                                    }
-                                },
+                                onPress: () => handleDelete(medicine),
                             },
-                        ]
+                        ],
                     );
                 }
-            }
+            },
         );
+    };
+
+    const openScanner = () => {
+        navigation.navigate('BarcodeScanner');
     };
 
     return (
@@ -105,16 +166,21 @@ const MedicineListScreen = ({ navigation }) => {
             <StatusBar barStyle="light-content" backgroundColor={COLORS.primaryDark} />
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
+                refreshControl={(
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor={COLORS.primary}
+                    />
+                )}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Header */}
                 <View style={styles.headerBg}>
                     <View style={styles.headerContent}>
                         <View style={styles.headerTopRow}>
                             <View>
                                 <Text style={styles.headerTitle}>Kho thuốc</Text>
-                                <Text style={styles.headerSubtitle}>Quản lý danh sách thuốc</Text>
+                                <Text style={styles.headerSubtitle}>Quản lý danh sách thuốc của bạn</Text>
                             </View>
                             <View style={styles.headerActions}>
                                 <TouchableOpacity style={styles.headerBtn}>
@@ -126,17 +192,29 @@ const MedicineListScreen = ({ navigation }) => {
                             </View>
                         </View>
 
-                        {/* Action Cards */}
                         <View style={styles.actionCards}>
-                            <TouchableOpacity style={[styles.actionCard, styles.actionCardLeft]}>
+                            <TouchableOpacity
+                                style={[styles.actionCard, styles.actionCardLeft]}
+                                onPress={openScanner}
+                                activeOpacity={0.85}
+                            >
                                 <View style={styles.actionIconCircle}>
                                     <Ionicons name="barcode-outline" size={24} color={COLORS.primary} />
                                 </View>
                                 <Text style={styles.actionCardText}>Quét mã vạch</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={[styles.actionCard, styles.actionCardRight]}>
+
+                            <TouchableOpacity
+                                style={[styles.actionCard, styles.actionCardRight]}
+                                activeOpacity={0.85}
+                                onPress={() => Alert.alert('Sắp có', 'Chức năng chụp đơn thuốc sẽ được bổ sung sau.')}
+                            >
                                 <View style={[styles.actionIconCircle, { backgroundColor: '#FFF3E0' }]}>
-                                    <Ionicons name="document-text-outline" size={24} color={COLORS.warning} />
+                                    <Ionicons
+                                        name="document-text-outline"
+                                        size={24}
+                                        color={COLORS.warning}
+                                    />
                                 </View>
                                 <Text style={styles.actionCardText}>Chụp đơn thuốc</Text>
                             </TouchableOpacity>
@@ -144,9 +222,7 @@ const MedicineListScreen = ({ navigation }) => {
                     </View>
                 </View>
 
-                {/* Body */}
                 <View style={styles.body}>
-                    {/* Search Bar */}
                     <View style={styles.searchRow}>
                         <View style={styles.searchBar}>
                             <Ionicons name="search-outline" size={18} color={COLORS.textMuted} />
@@ -163,10 +239,8 @@ const MedicineListScreen = ({ navigation }) => {
                         </TouchableOpacity>
                     </View>
 
-                    {/* Filter Tabs */}
                     <FilterTabs tabs={filterTabs} activeTab={activeFilter} onTabChange={setActiveFilter} />
 
-                    {/* Medicine List */}
                     {filteredMedicines.map((medicine) => (
                         <MedicineCard
                             key={medicine.id}
@@ -177,17 +251,16 @@ const MedicineListScreen = ({ navigation }) => {
                         />
                     ))}
 
-                    {filteredMedicines.length === 0 && !loading && (
+                    {filteredMedicines.length === 0 && !loading ? (
                         <View style={styles.emptyState}>
                             <Ionicons name="medkit-outline" size={64} color={COLORS.textMuted} />
                             <Text style={styles.emptyTitle}>Chưa có thuốc nào</Text>
                             <Text style={styles.emptySubtitle}>Bấm + để thêm thuốc mới</Text>
                         </View>
-                    )}
+                    ) : null}
                 </View>
             </ScrollView>
 
-            {/* FAB */}
             <TouchableOpacity
                 style={styles.fab}
                 onPress={() => navigation.navigate('AddMedicine')}
@@ -210,8 +283,6 @@ const styles = StyleSheet.create({
     headerBg: {
         backgroundColor: COLORS.primaryDark,
         paddingBottom: 30,
-        borderBottomLeftRadius: 0,
-        borderBottomRightRadius: 0,
     },
     headerContent: {
         paddingHorizontal: SIZES.paddingXL,
@@ -230,7 +301,7 @@ const styles = StyleSheet.create({
     },
     headerSubtitle: {
         fontSize: SIZES.md,
-        color: 'rgba(255,255,255,0.7)',
+        color: 'rgba(255, 255, 255, 0.7)',
         marginTop: 2,
     },
     headerActions: {
@@ -241,7 +312,7 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.15)',
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -274,6 +345,7 @@ const styles = StyleSheet.create({
         fontSize: SIZES.sm,
         ...FONTS.semibold,
         color: COLORS.text,
+        textAlign: 'center',
     },
     body: {
         paddingHorizontal: SIZES.paddingXL,

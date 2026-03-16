@@ -2,6 +2,89 @@ const db = require("../config/database");
 
 let notificationSettingsTableEnsured = false;
 
+// ===== PUSH TOKEN =====
+
+const registerPushToken = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { expo_push_token, device_id, platform } = req.body;
+
+    if (!expo_push_token) {
+      return res.status(400).json({
+        success: false,
+        message: "expo_push_token là bắt buộc",
+      });
+    }
+
+    // Validate Expo push token format
+    if (!expo_push_token.startsWith("ExponentPushToken[") && !expo_push_token.startsWith("ExpoPushToken[")) {
+      return res.status(400).json({
+        success: false,
+        message: "expo_push_token không đúng format",
+      });
+    }
+
+    // Upsert: nếu đã tồn tại token thì cập nhật user_id và active
+    await db.query(
+      `INSERT INTO PushTokens (user_id, expo_push_token, device_id, platform, is_active)
+       VALUES (?, ?, ?, ?, 1)
+       ON DUPLICATE KEY UPDATE
+         user_id = VALUES(user_id),
+         device_id = VALUES(device_id),
+         platform = VALUES(platform),
+         is_active = 1,
+         updated_at = CURRENT_TIMESTAMP`,
+      [userId, expo_push_token, device_id || null, platform || null]
+    );
+
+    res.json({
+      success: true,
+      message: "Đăng ký push token thành công",
+    });
+  } catch (error) {
+    console.error("Lỗi đăng ký push token:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi đăng ký push token",
+      error: error.message,
+    });
+  }
+};
+
+const removePushToken = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { expo_push_token } = req.body;
+
+    if (!expo_push_token) {
+      return res.status(400).json({
+        success: false,
+        message: "expo_push_token là bắt buộc",
+      });
+    }
+
+    await db.query(
+      "UPDATE PushTokens SET is_active = 0 WHERE user_id = ? AND expo_push_token = ?",
+      [userId, expo_push_token]
+    );
+
+    res.json({
+      success: true,
+      message: "Hủy đăng ký push token thành công",
+    });
+  } catch (error) {
+    console.error("Lỗi hủy push token:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi hủy push token",
+      error: error.message,
+    });
+  }
+};
+
+// ===== NOTIFICATION SETTINGS =====
+
+
 const DEFAULT_SETTINGS = {
   remind_medicine: 1,
   sound: 1,
@@ -140,6 +223,8 @@ const updateNotificationSettings = async (req, res) => {
 };
 
 module.exports = {
+  registerPushToken,
+  removePushToken,
   getNotificationSettings,
   updateNotificationSettings,
 };

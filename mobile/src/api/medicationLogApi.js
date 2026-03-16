@@ -1,5 +1,6 @@
 import api from './api';
 
+
 const unwrapResponse = (response) => ({
     ...response,
     data: response?.data?.data ?? response?.data ?? [],
@@ -16,4 +17,24 @@ export const getMedicationSummary = (params = {}) => {
 
 export const createMedicationLog = (data) => {
     return api.post('/medication-logs', data).then(unwrapResponse);
+
+export const getMedicationLogs = (params = {}) => {
+    return api.get('/medication-logs', { params });
+};
+
+export const getMedicationSummary = (params = {}) => {
+    return api.get('/medication-logs/summary', { params });
+};
+
+export const createMedicationLog = (data) => {
+    return api.post('/medication-logs', data);
+};
+
+export const updateMedicationLog = (id, data) => {
+    return api.put(`/medication-logs/${id}`, data);
+};
+
+export const deleteMedicationLog = (id) => {
+    return api.delete(`/medication-logs/${id}`);
+
 };
