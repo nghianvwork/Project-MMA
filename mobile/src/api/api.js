@@ -56,6 +56,14 @@ api.interceptors.request.use(
     config.baseURL = resolvedBaseUrl;
     config._baseIndex = baseIndex;
 
+    // Ensure Authorization header from defaults is included if not already set
+    if (!config.headers.Authorization && !config.headers.authorization) {
+      const authHeader = api.defaults.headers.common.Authorization;
+      if (authHeader) {
+        config.headers.Authorization = authHeader;
+      }
+    }
+
     console.log(`[API] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
     console.log(
       '[API] Auth header:',
