@@ -111,7 +111,12 @@ const getMedicineById = async (req, res) => {
 const createMedicine = async (req, res) => {
   try {
     const userId = req.userId;
-    const newMedicine = await insertMedicineForUser(userId, req.body);
+    const payload = {
+      ...req.body,
+      barcode: typeof req.body.barcode === 'string' ? req.body.barcode.trim() : req.body.barcode
+    };
+
+    const newMedicine = await insertMedicineForUser(userId, payload);
     
     res.status(201).json({
       success: true,
@@ -123,41 +128,6 @@ const createMedicine = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Lỗi server khi thêm thuốc',
-      error: error.message
-    });
-  }
-};
-
-// Thêm thuốc mới với barcode bắt buộc
-const createMedicineWithBarcode = async (req, res) => {
-  try {
-    const userId = req.userId;
-    const { barcode } = req.body;
-
-    if (!barcode || barcode.trim() === '') {
-      return res.status(400).json({
-        success: false,
-        message: 'barcode không được để trống'
-      });
-    }
-
-    const payload = {
-      ...req.body,
-      barcode: barcode.trim()
-    };
-
-    const newMedicine = await insertMedicineForUser(userId, payload);
-
-    res.status(201).json({
-      success: true,
-      message: 'Thêm thuốc với barcode thành công',
-      data: newMedicine
-    });
-  } catch (error) {
-    console.error('Lỗi khi thêm thuốc với barcode:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Lỗi server khi thêm thuốc với barcode',
       error: error.message
     });
   }
@@ -359,7 +329,6 @@ module.exports = {
   getMedicines,
   getMedicineById,
   createMedicine,
-  createMedicineWithBarcode,
   updateMedicine,
   deleteMedicine,
   updateStock,
