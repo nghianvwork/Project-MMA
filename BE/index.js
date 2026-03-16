@@ -3,7 +3,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const path = require('path');
+const nodePath = require('path');
 const swaggerUi = require('swagger-ui-express');
 const getServerUrl = require('./utils/getServerUrl');
 const userRoutes = require("./routes/userRoutes");
@@ -37,7 +37,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(nodePath.join(__dirname, 'public')));
 
 // Swagger UI - ĐẶT TRƯỚC các routes khác
 const swaggerOptions = {
@@ -53,7 +53,7 @@ app.get('/swagger.json', (req, res) => {
 
 // Routes
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'render-deploy.html'));
+  res.sendFile(nodePath.join(__dirname, 'public', 'render-deploy.html'));
 });
 
 app.get('/api-info', (req, res) => {
