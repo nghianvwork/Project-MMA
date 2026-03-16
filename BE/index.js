@@ -1,5 +1,4 @@
-const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -29,7 +28,6 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const { startCronJobs } = require('./services/cronJobs');
 
 
-main
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -101,7 +99,6 @@ app.use("/api/medication-logs", medicationLogRoutes);
 app.use("/api/notifications", notificationRoutes);
 
 
-main
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
