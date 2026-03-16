@@ -22,6 +22,7 @@ import ScheduleScreen from './src/screens/ScheduleScreen';
 import MedicineListScreen from './src/screens/MedicineListScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import HealthProfileScreen from './src/screens/HealthProfileScreen';
+import EditHealthProfileScreen from './src/screens/EditHealthProfileScreen';
 import EditProfileScreen from './src/screens/EditProfileScreen';
 import FamilyMemberProfileScreen from './src/screens/FamilyMemberProfileScreen';
 import MedicationHistoryScreen from './src/screens/MedicationHistoryScreen';
@@ -268,6 +269,11 @@ export default function App() {
         <Stack.Screen
           name="HealthProfile"
           component={HealthProfileScreen}
+          initialParams={{ session }}
+        />
+        <Stack.Screen
+          name="EditHealthProfile"
+          component={EditHealthProfileScreen}
           initialParams={{ session }}
         />
         <Stack.Screen

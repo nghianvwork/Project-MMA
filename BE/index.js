@@ -25,6 +25,8 @@ const scheduleRoutes = require('./routes/scheduleRoutes');
 const familyRoutes = require("./routes/familyRoutes");
 const medicationLogRoutes = require("./routes/medicationLogRoutes");
 const notificationRoutes = require('./routes/notificationRoutes');
+const healthRoutes = require("./routes/healthRoutes");
+const healthProfileRoutes = require("./routes/healthProfileRoutes");
 const { startCronJobs } = require('./services/cronJobs');
 
 
@@ -97,6 +99,8 @@ app.use("/api/family-members", familyRoutes);
 app.use("/api/medication-logs", medicationLogRoutes);
 
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/health-records", healthRoutes);
+app.use("/api/health-profile", healthProfileRoutes);
 
 
 // Error handling middleware
