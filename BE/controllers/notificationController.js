@@ -1,5 +1,7 @@
 const db = require("../config/database");
 
+let notificationSettingsTableEnsured = false;
+
 // ===== PUSH TOKEN =====
 
 const registerPushToken = async (req, res) => {
@@ -82,6 +84,7 @@ const removePushToken = async (req, res) => {
 
 // ===== NOTIFICATION SETTINGS =====
 
+
 const DEFAULT_SETTINGS = {
   remind_medicine: 1,
   sound: 1,
@@ -94,8 +97,33 @@ const DEFAULT_SETTINGS = {
   quiet_end: "06:00:00",
 };
 
+const ensureNotificationSettingsTable = async () => {
+  if (notificationSettingsTableEnsured) {
+    return;
+  }
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS NotificationSettings (
+      user_id VARCHAR(36) PRIMARY KEY,
+      remind_medicine TINYINT(1) DEFAULT 1,
+      sound TINYINT(1) DEFAULT 1,
+      vibrate TINYINT(1) DEFAULT 1,
+      low_stock_alert TINYINT(1) DEFAULT 1,
+      family_alert TINYINT(1) DEFAULT 1,
+      system_alert TINYINT(1) DEFAULT 1,
+      quiet_hours_enabled TINYINT(1) DEFAULT 0,
+      quiet_start TIME DEFAULT '22:00:00',
+      quiet_end TIME DEFAULT '06:00:00',
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  notificationSettingsTableEnsured = true;
+};
+
 const getNotificationSettings = async (req, res) => {
   try {
+    await ensureNotificationSettingsTable();
     const userId = req.userId;
     const [rows] = await db.query(
       "SELECT * FROM NotificationSettings WHERE user_id = ?",
@@ -119,6 +147,7 @@ const getNotificationSettings = async (req, res) => {
 
 const updateNotificationSettings = async (req, res) => {
   try {
+    await ensureNotificationSettingsTable();
     const userId = req.userId;
     const payload = {
       remind_medicine: req.body.remind_medicine,

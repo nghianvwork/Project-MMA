@@ -9,8 +9,12 @@ import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../theme/theme';
 import { getSchedulesByDate } from '../api/scheduleApi';
 import { getLowStockMedicines } from '../api/medicineApi';
+
+import { toVietnamDateString } from '../utils/dateTime';
+
 import { checkAndNotifyLowStock } from '../services/notificationService';
 import { syncScheduleNotifications } from '../services/scheduleNotificationManager';
+
 
 const HomeScreen = ({ navigation }) => {
     const [todaySchedules, setTodaySchedules] = useState([]);
@@ -18,7 +22,7 @@ const HomeScreen = ({ navigation }) => {
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = toVietnamDateString();
 
     const loadData = async () => {
         try {

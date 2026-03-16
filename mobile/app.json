@@ -13,6 +13,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "plugins": [
+      "expo-notifications"
+    ],
     "ios": {
       "supportsTablet": true,
       "infoPlist": {

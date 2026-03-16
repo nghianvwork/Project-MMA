@@ -2,15 +2,23 @@ import React, { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES } from '../theme/theme';
+import { parseVietnamSqlDateTime, toVietnamDateString } from '../utils/dateTime';
 
 const DAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+
+const parseSelectedDate = (value) => {
+    const parsed = parseVietnamSqlDateTime(value);
+    if (parsed) {
+        return new Date(parsed.year, parsed.month - 1, parsed.day);
+    }
+    return new Date();
+};
 
 const DaySelector = ({ selectedDate, onDateChange }) => {
     const scrollRef = useRef(null);
 
     const getWeekDays = () => {
-        const today = selectedDate ? new Date(selectedDate) : new Date();
-        const dayOfWeek = today.getDay();
+        const today = selectedDate ? parseSelectedDate(selectedDate) : new Date();
         const days = [];
 
         for (let i = -3; i <= 3; i++) {
@@ -29,29 +37,35 @@ const DaySelector = ({ selectedDate, onDateChange }) => {
     };
 
     const isSelected = (date) => {
-        const sel = selectedDate ? new Date(selectedDate) : new Date();
+        const sel = selectedDate ? parseSelectedDate(selectedDate) : new Date();
         return date.toDateString() === sel.toDateString();
     };
 
     const formatMonthYear = () => {
+
+        const date = selectedDate ? parseSelectedDate(selectedDate) : new Date();
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+=======
         const date = selectedDate ? new Date(selectedDate) : new Date();
         return date.toLocaleDateString('vi-VN', {
             day: '2-digit',
             month: 'long',
             year: 'numeric',
         });
+
     };
 
     const goToPrevWeek = () => {
-        const date = selectedDate ? new Date(selectedDate) : new Date();
+        const date = selectedDate ? parseSelectedDate(selectedDate) : new Date();
         date.setDate(date.getDate() - 7);
-        onDateChange(date.toISOString().split('T')[0]);
+        onDateChange(toVietnamDateString(date));
     };
 
     const goToNextWeek = () => {
-        const date = selectedDate ? new Date(selectedDate) : new Date();
+        const date = selectedDate ? parseSelectedDate(selectedDate) : new Date();
         date.setDate(date.getDate() + 7);
-        onDateChange(date.toISOString().split('T')[0]);
+        onDateChange(toVietnamDateString(date));
     };
 
     return (
@@ -68,7 +82,7 @@ const DaySelector = ({ selectedDate, onDateChange }) => {
                             <TouchableOpacity
                                 key={index}
                                 style={[styles.dayItem, selected && styles.dayItemSelected]}
-                                onPress={() => onDateChange(date.toISOString().split('T')[0])}
+                                onPress={() => onDateChange(toVietnamDateString(date))}
                             >
                                 <Text style={[styles.dayLabel, selected && styles.dayLabelSelected]}>
                                     {DAYS[date.getDay()]}
