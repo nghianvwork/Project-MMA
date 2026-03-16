@@ -269,7 +269,10 @@ export default function HealthProfileScreen({ route, navigation }) {
         </ScrollView>
 
         <View style={styles.footer}>
-          <Pressable style={styles.updateButton}>
+          <Pressable
+            style={styles.updateButton}
+            onPress={() => navigation.navigate("EditHealthProfile", { session })}
+          >
             <MaterialCommunityIcons name="stethoscope" size={18} color="#ffffff" />
             <Text style={styles.updateButtonText}>Cập nhật chỉ số</Text>
           </Pressable>
