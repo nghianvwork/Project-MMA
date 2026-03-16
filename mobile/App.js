@@ -115,7 +115,6 @@ export default function App() {
     });
   }, [session?.token]);
 
-  const handleLogout = () => {
   // Setup notification listeners (once, persistent across screens)
   useEffect(() => {
     const cleanup = setupNotificationListeners(navigationRef);
@@ -152,10 +151,8 @@ export default function App() {
     }
     await cancelAllNotifications();
 
-update-login-profile
-Stashed changes
 
-main
+
     setSession(null);
     setAuthToken(null);
     setScreen('welcome');
@@ -376,4 +373,4 @@ const styles = StyleSheet.create({
   tabItem: {
     paddingTop: 4,
   },
-});
+}); 
