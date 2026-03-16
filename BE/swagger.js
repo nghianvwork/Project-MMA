@@ -65,6 +65,10 @@ Ví dụ: Authorization: Bearer <your_token>
       name: "MedicationLogs",
       description: "API lich su uong thuoc",
     },
+    {
+      name: "Health",
+      description: "API ho so suc khoe",
+    },
   ],
   components: {
     securitySchemes: {
@@ -741,6 +745,91 @@ Ví dụ: Authorization: Bearer <your_token>
       delete: {
         tags: ["MedicationLogs"],
         summary: "Xoa log uong thuoc",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+        responses: { 200: { description: "Xoa thanh cong" } },
+      },
+    },
+    "/api/health-profile": {
+      get: {
+        tags: ["Health"],
+        summary: "Lay ho so suc khoe tong hop",
+        description:
+          "Tra ve chieu cao, can nang, BMI va danh sach benh ly nen/di ung/tien su phau thuat. Co the truyen member_id neu muon lay cho nguoi than.",
+        parameters: [
+          {
+            name: "member_id",
+            in: "query",
+            schema: { type: "integer" },
+          },
+        ],
+        responses: { 200: { description: "Thanh cong" } },
+      },
+    },
+    "/api/health-records": {
+      get: {
+        tags: ["Health"],
+        summary: "Lay danh sach ho so suc khoe",
+        parameters: [
+          { name: "member_id", in: "query", schema: { type: "integer" } },
+          { name: "category", in: "query", schema: { type: "string" } },
+        ],
+        responses: { 200: { description: "Thanh cong" } },
+      },
+      post: {
+        tags: ["Health"],
+        summary: "Tao ho so suc khoe",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  member_id: { type: "integer", nullable: true },
+                  category: { type: "string" },
+                  title: { type: "string" },
+                  description: { type: "string" },
+                  diagnosed_date: { type: "string", format: "date" },
+                  hospital: { type: "string" },
+                  severity: { type: "string" },
+                },
+                required: ["category", "title"],
+              },
+            },
+          },
+        },
+        responses: { 201: { description: "Tao thanh cong" } },
+      },
+    },
+    "/api/health-records/{id}": {
+      put: {
+        tags: ["Health"],
+        summary: "Cap nhat ho so suc khoe",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  member_id: { type: "integer", nullable: true },
+                  category: { type: "string" },
+                  title: { type: "string" },
+                  description: { type: "string" },
+                  diagnosed_date: { type: "string", format: "date" },
+                  hospital: { type: "string" },
+                  severity: { type: "string" },
+                },
+              },
+            },
+          },
+        },
+        responses: { 200: { description: "Cap nhat thanh cong" } },
+      },
+      delete: {
+        tags: ["Health"],
+        summary: "Xoa ho so suc khoe",
         parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
         responses: { 200: { description: "Xoa thanh cong" } },
       },

@@ -75,7 +75,46 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [resetFlow, setResetFlow] = useState({ email: '', resetToken: '' });
 
+<<<<<<< Updated upstream
   const handleLogout = () => {
+=======
+  // Setup notification listeners (once, persistent across screens)
+  useEffect(() => {
+    const cleanup = setupNotificationListeners(navigationRef);
+    return cleanup;
+  }, []);
+
+  // Initialize notifications when authenticated
+  const initNotifications = useCallback(async () => {
+    try {
+      const granted = await requestPermissions();
+      if (!granted) return;
+
+      // Register push token with backend
+      const token = await getExpoPushToken();
+      if (token) {
+        pushTokenRef.current = token;
+        await savePushToken(token, null, Platform.OS).catch((err) =>
+          console.log('[App] Push token save failed:', err.message)
+        );
+      }
+
+      // Schedule local notifications for upcoming medicine times
+      await syncScheduleNotifications();
+    } catch (error) {
+      console.log('[App] Notification init error:', error.message);
+    }
+  }, []);
+
+  const handleLogout = async () => {
+    // Deregister push token on logout
+    if (pushTokenRef.current) {
+      await removePushToken(pushTokenRef.current).catch(() => {});
+      pushTokenRef.current = null;
+    }
+    await cancelAllNotifications();
+
+>>>>>>> Stashed changes
     setSession(null);
     setScreen('welcome');
   };
@@ -176,10 +215,42 @@ export default function App() {
   function ProfileStack() {
     return (
       <Stack.Navigator screenOptions={{ headerShown: false }}>
+<<<<<<< Updated upstream
         <Stack.Screen
           name="ProfileMain"
           component={ProfileScreen}
           initialParams={{ session, onLogout: handleLogout }}
+=======
+        <Stack.Screen name="ProfileMain">
+          {(props) => (
+            <ProfileScreen {...props} session={session} onLogout={handleLogout} />
+          )}
+        </Stack.Screen>
+        <Stack.Screen
+          name="HealthProfile"
+          component={HealthProfileScreen}
+          initialParams={{ session }}
+        />
+        <Stack.Screen
+          name="EditProfile"
+          component={EditProfileScreen}
+          initialParams={{ session }}
+        />
+        <Stack.Screen
+          name="FamilyMemberProfile"
+          component={FamilyMemberProfileScreen}
+          initialParams={{ session }}
+        />
+        <Stack.Screen
+          name="MedicationHistory"
+          component={MedicationHistoryScreen}
+          initialParams={{ session }}
+        />
+        <Stack.Screen
+          name="NotificationSettings"
+          component={NotificationSettingsScreen}
+          initialParams={{ session }}
+>>>>>>> Stashed changes
         />
       </Stack.Navigator>
     );
