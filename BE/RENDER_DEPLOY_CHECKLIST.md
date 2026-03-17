@@ -63,6 +63,7 @@ DB_PORT=3306
 DB_USER=<your-db-user>
 DB_PASSWORD=<your-db-password>
 DB_NAME=project_mma
+JWT_SECRET=<your-long-random-jwt-secret>
 ```
 
 **Lưu ý:** Render tự động set biến `RENDER_EXTERNAL_URL`, không cần thêm thủ công.

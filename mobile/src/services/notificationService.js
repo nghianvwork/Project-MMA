@@ -3,6 +3,7 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getNotificationSettings } from '../api/notificationApi';
 
 // Foreground notification display config
 Notifications.setNotificationHandler({
@@ -252,6 +253,17 @@ export function setupNotificationListeners(navigationRef) {
  */
 export async function checkAndNotifyLowStock(lowStockMeds) {
     if (!lowStockMeds || lowStockMeds.length === 0) return;
+
+    try {
+        const settingsResponse = await getNotificationSettings();
+        const settings = settingsResponse?.data || {};
+
+        if (!Number(settings?.low_stock_alert ?? 1)) {
+            return;
+        }
+    } catch {
+        // Keep default behavior when settings endpoint is temporarily unavailable.
+    }
 
     const today = new Date().toISOString().split('T')[0];
     const storageKey = `low_stock_notified_${today}`;

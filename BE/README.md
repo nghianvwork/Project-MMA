@@ -106,6 +106,7 @@ DB_HOST=your-production-host
 DB_USER=your-production-user
 DB_PASSWORD=your-production-password
 DB_NAME=your-production-database
+JWT_SECRET=your-long-random-jwt-secret
 ```
 
 2. Chạy server:

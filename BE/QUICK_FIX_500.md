@@ -24,6 +24,7 @@ DB_PORT=3306
 DB_USER=<your-database-user>
 DB_PASSWORD=<your-database-password>
 DB_NAME=<your-database-name>
+JWT_SECRET=<your-long-random-jwt-secret>
 ```
 
 ### ❌ Nếu thiếu → Thêm vào và Save Changes

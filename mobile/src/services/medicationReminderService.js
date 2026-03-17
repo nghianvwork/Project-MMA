@@ -5,16 +5,48 @@ import { getNotificationSettings } from '../api/notificationApi';
 import { getSchedules } from '../api/scheduleApi';
 
 const STORAGE_KEY = 'medication_reminder_notification_ids_v1';
-const REMINDER_CHANNEL_ID = 'medication-reminders';
+const REMINDER_CHANNEL_ID_VIBRATE_ON = 'medication-reminders-vibrate-on';
+const REMINDER_CHANNEL_ID_VIBRATE_OFF = 'medication-reminders-vibrate-off';
 const REMINDER_HORIZON_DAYS = 60;
 
 const DEFAULT_NOTIFICATION_SETTINGS = {
     remind_medicine: 1,
     sound: 1,
     vibrate: 1,
+    quiet_hours_enabled: 0,
+    quiet_start: '22:00:00',
+    quiet_end: '06:00:00',
 };
 
-let configured = false;
+const toBooleanNumber = (value, fallback = 0) => {
+    const parsed = Number(value);
+    if (Number.isNaN(parsed)) {
+        return Number(fallback) ? 1 : 0;
+    }
+    return parsed ? 1 : 0;
+};
+
+const normalizeTimeText = (value, fallback) => {
+    const text = String(value || '').trim();
+    const match = text.match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/);
+    if (!match) {
+        return fallback;
+    }
+
+    const hour = Math.max(0, Math.min(23, Number(match[1]) || 0));
+    const minute = Math.max(0, Math.min(59, Number(match[2]) || 0));
+    const second = Math.max(0, Math.min(59, Number(match[3]) || 0));
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`;
+};
+
+const normalizeNotificationSettings = (raw = {}) => ({
+    remind_medicine: toBooleanNumber(raw.remind_medicine, DEFAULT_NOTIFICATION_SETTINGS.remind_medicine),
+    sound: toBooleanNumber(raw.sound, DEFAULT_NOTIFICATION_SETTINGS.sound),
+    vibrate: toBooleanNumber(raw.vibrate, DEFAULT_NOTIFICATION_SETTINGS.vibrate),
+    quiet_hours_enabled: toBooleanNumber(raw.quiet_hours_enabled, DEFAULT_NOTIFICATION_SETTINGS.quiet_hours_enabled),
+    quiet_start: normalizeTimeText(raw.quiet_start, DEFAULT_NOTIFICATION_SETTINGS.quiet_start),
+    quiet_end: normalizeTimeText(raw.quiet_end, DEFAULT_NOTIFICATION_SETTINGS.quiet_end),
+});
 
 const parseTimeOfDay = (timeOfDay) => {
     const [hour = '0', minute = '0'] = String(timeOfDay || '00:00:00').split(':');
@@ -22,6 +54,33 @@ const parseTimeOfDay = (timeOfDay) => {
         hour: Number(hour) || 0,
         minute: Number(minute) || 0,
     };
+};
+
+const parseTimeMinutes = (timeText) => {
+    const [hour = '0', minute = '0'] = String(timeText || '').split(':');
+    const safeHour = Math.max(0, Math.min(23, Number(hour) || 0));
+    const safeMinute = Math.max(0, Math.min(59, Number(minute) || 0));
+    return safeHour * 60 + safeMinute;
+};
+
+const isWithinQuietHours = (triggerDate, settings) => {
+    if (!Number(settings?.quiet_hours_enabled || 0)) {
+        return false;
+    }
+
+    const start = parseTimeMinutes(settings.quiet_start);
+    const end = parseTimeMinutes(settings.quiet_end);
+    const currentMinutes = triggerDate.getHours() * 60 + triggerDate.getMinutes();
+
+    if (start === end) {
+        return true;
+    }
+
+    if (start < end) {
+        return currentMinutes >= start && currentMinutes < end;
+    }
+
+    return currentMinutes >= start || currentMinutes < end;
 };
 
 const parseDateOnly = (dateString) => {
@@ -62,7 +121,13 @@ const buildNotificationContent = (schedule, settings) => ({
         scheduleId: schedule.id,
         medicineId: schedule.medicine_id,
     },
-    ...(Platform.OS === 'android' ? { channelId: REMINDER_CHANNEL_ID } : {}),
+    ...(Platform.OS === 'android'
+        ? {
+            channelId: Number(settings.vibrate ?? 1)
+                ? REMINDER_CHANNEL_ID_VIBRATE_ON
+                : REMINDER_CHANNEL_ID_VIBRATE_OFF,
+        }
+        : {}),
 });
 
 const getStoredNotificationIds = async () => {
@@ -99,17 +164,23 @@ const ensureNotificationRuntimeConfigured = async (settings) => {
         }),
     });
 
-    if (!configured && Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync(REMINDER_CHANNEL_ID, {
-            name: 'Nhac uong thuoc',
+    if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync(REMINDER_CHANNEL_ID_VIBRATE_ON, {
+            name: 'Nhac uong thuoc (co rung)',
             importance: Notifications.AndroidImportance.MAX,
             sound: Number(settings.sound ?? 1) ? 'default' : undefined,
-            vibrationPattern: Number(settings.vibrate ?? 1) ? [0, 300, 150, 300] : [0],
+            vibrationPattern: [0, 300, 150, 300],
+            lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+        });
+
+        await Notifications.setNotificationChannelAsync(REMINDER_CHANNEL_ID_VIBRATE_OFF, {
+            name: 'Nhac uong thuoc (khong rung)',
+            importance: Notifications.AndroidImportance.MAX,
+            sound: Number(settings.sound ?? 1) ? 'default' : undefined,
+            vibrationPattern: [0],
             lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
         });
     }
-
-    configured = true;
 };
 
 const requestNotificationPermission = async () => {
@@ -160,7 +231,7 @@ const shouldScheduleOnDate = (schedule, candidateDate) => {
     return true;
 };
 
-const buildUpcomingTriggerDates = (schedule) => {
+const buildUpcomingTriggerDates = (schedule, settings) => {
     const now = new Date();
     const horizonDate = new Date(now);
     horizonDate.setDate(horizonDate.getDate() + REMINDER_HORIZON_DAYS);
@@ -180,6 +251,10 @@ const buildUpcomingTriggerDates = (schedule) => {
             continue;
         }
 
+        if (isWithinQuietHours(triggerDate, settings)) {
+            continue;
+        }
+
         dates.push(triggerDate);
     }
 
@@ -191,7 +266,7 @@ const scheduleReminderForSchedule = async (schedule, settings) => {
         return [];
     }
 
-    const triggerDates = buildUpcomingTriggerDates(schedule);
+    const triggerDates = buildUpcomingTriggerDates(schedule, settings);
     const ids = [];
 
     for (const triggerDate of triggerDates) {
@@ -213,9 +288,9 @@ export const syncMedicationReminders = async () => {
     let settings = DEFAULT_NOTIFICATION_SETTINGS;
     try {
         const settingsResponse = await getNotificationSettings();
-        settings = { ...settings, ...(settingsResponse?.data || {}) };
+        settings = normalizeNotificationSettings({ ...settings, ...(settingsResponse?.data || {}) });
     } catch (_error) {
-        settings = DEFAULT_NOTIFICATION_SETTINGS;
+        settings = normalizeNotificationSettings(DEFAULT_NOTIFICATION_SETTINGS);
     }
 
     await ensureNotificationRuntimeConfigured(settings);
@@ -254,9 +329,9 @@ export const scheduleDebugMedicationNotification = async () => {
     let settings = DEFAULT_NOTIFICATION_SETTINGS;
     try {
         const settingsResponse = await getNotificationSettings();
-        settings = { ...settings, ...(settingsResponse?.data || {}) };
+        settings = normalizeNotificationSettings({ ...settings, ...(settingsResponse?.data || {}) });
     } catch (_error) {
-        settings = DEFAULT_NOTIFICATION_SETTINGS;
+        settings = normalizeNotificationSettings(DEFAULT_NOTIFICATION_SETTINGS);
     }
 
     const permissionGranted = await requestNotificationPermission();
@@ -271,7 +346,13 @@ export const scheduleDebugMedicationNotification = async () => {
             title: 'Thong bao test',
             body: 'Neu ban thay thong bao nay, local notification dang hoat dong.',
             sound: Number(settings.sound ?? 1) ? true : false,
-            ...(Platform.OS === 'android' ? { channelId: REMINDER_CHANNEL_ID } : {}),
+            ...(Platform.OS === 'android'
+                ? {
+                    channelId: Number(settings.vibrate ?? 1)
+                        ? REMINDER_CHANNEL_ID_VIBRATE_ON
+                        : REMINDER_CHANNEL_ID_VIBRATE_OFF,
+                }
+                : {}),
         },
         trigger: {
             type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
