@@ -207,7 +207,7 @@ const MedicineListScreen = ({ navigation }) => {
                             <TouchableOpacity
                                 style={[styles.actionCard, styles.actionCardRight]}
                                 activeOpacity={0.85}
-                                onPress={() => Alert.alert('Sắp có', 'Chức năng chụp đơn thuốc sẽ được bổ sung sau.')}
+                                onPress={() => navigation.navigate('MedicinePhotoLookup')}
                             >
                                 <View style={[styles.actionIconCircle, { backgroundColor: '#FFF3E0' }]}>
                                     <Ionicons
@@ -216,7 +216,7 @@ const MedicineListScreen = ({ navigation }) => {
                                         color={COLORS.warning}
                                     />
                                 </View>
-                                <Text style={styles.actionCardText}>Chụp đơn thuốc</Text>
+                                <Text style={styles.actionCardText}>Chụp ảnh tìm thuốc</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
