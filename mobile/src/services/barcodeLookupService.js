@@ -1,3 +1,5 @@
+import { lookupMedicineByBarcodeGemini } from './geminiMedicineLookupService';
+
 const OPEN_FDA_LOOKUP_URL = 'https://api.fda.gov/drug/ndc.json';
 
 const getPackageDescription = (packages = []) => {
@@ -101,7 +103,14 @@ export const lookupMedicineByBarcode = async (barcode) => {
     }
 
     if (lastError) {
-        console.log('[barcodeLookup] lookup failed:', lastError.message);
+        console.log('[barcodeLookup] OpenFDA lookup failed:', lastError.message);
+    }
+
+    // Fallback: use Gemini AI for Vietnamese and unlisted medicines
+    try {
+        return await lookupMedicineByBarcodeGemini(normalizedBarcode);
+    } catch (geminiError) {
+        console.log('[barcodeLookup] Gemini fallback failed:', geminiError.message);
     }
 
     return {
