@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES } from '../theme/theme';
@@ -15,8 +15,6 @@ const parseSelectedDate = (value) => {
 };
 
 const DaySelector = ({ selectedDate, onDateChange }) => {
-    const scrollRef = useRef(null);
-
     const getWeekDays = () => {
         const today = selectedDate ? parseSelectedDate(selectedDate) : new Date();
         const days = [];
@@ -39,21 +37,6 @@ const DaySelector = ({ selectedDate, onDateChange }) => {
     const isSelected = (date) => {
         const sel = selectedDate ? parseSelectedDate(selectedDate) : new Date();
         return date.toDateString() === sel.toDateString();
-    };
-
-    const formatMonthYear = () => {
-
-        const date = selectedDate ? parseSelectedDate(selectedDate) : new Date();
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
-=======
-        const date = selectedDate ? new Date(selectedDate) : new Date();
-        return date.toLocaleDateString('vi-VN', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric',
-        });
-
     };
 
     const goToPrevWeek = () => {

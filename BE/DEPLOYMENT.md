@@ -18,6 +18,7 @@ DB_PORT=3306
 DB_USER=your_db_user
 DB_PASSWORD=your_secure_password
 DB_NAME=project_mma
+JWT_SECRET=your-long-random-jwt-secret
 
 # Server
 PORT=3000
@@ -41,6 +42,7 @@ NODE_ENV=production
    DB_USER=<từ Railway MySQL>
    DB_PASSWORD=<từ Railway MySQL>
    DB_NAME=railway
+   JWT_SECRET=<chuỗi bí mật dài ngẫu nhiên>
    PORT=3000
    NODE_ENV=production
    ```

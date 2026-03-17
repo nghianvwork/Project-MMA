@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     TextInput, StatusBar, Alert, KeyboardAvoidingView, Platform,
@@ -13,8 +13,6 @@ import { getMedicines } from '../api/medicineApi';
 
 import { syncMedicationReminders } from '../services/medicationReminderService';
 import { toVietnamDateString } from '../utils/dateTime';
-=======
-import { syncScheduleNotifications } from '../services/scheduleNotificationManager';
 
 
 const RULE_TYPES = [
@@ -60,7 +58,7 @@ const parseDateYMD = (dateStr) => {
     return date;
 };
 
-const AddScheduleScreen = ({ navigation, route }) => {
+const AddScheduleScreen = ({ navigation }) => {
     const [medicines, setMedicines] = useState([]);
     const [selectedMedicine, setSelectedMedicine] = useState(null);
     const [showMedicinePicker, setShowMedicinePicker] = useState(false);
@@ -68,12 +66,10 @@ const AddScheduleScreen = ({ navigation, route }) => {
     const [intervalDays, setIntervalDays] = useState('2');
     const [selectedWeekdays, setSelectedWeekdays] = useState([1, 3, 5]); // Mon, Wed, Fri
 
-    const [timeOfDay, setTimeOfDay] = useState('08:00');
     const [startDate, setStartDate] = useState(toVietnamDateString());
 
     const [selectedTime, setSelectedTime] = useState(createDefaultTime);
     const [showTimePicker, setShowTimePicker] = useState(false);
-    const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
 
     const [endDate, setEndDate] = useState('');
     const [activeDatePicker, setActiveDatePicker] = useState(null);
@@ -194,10 +190,6 @@ const AddScheduleScreen = ({ navigation, route }) => {
             await createSchedule(data);
 
             await syncMedicationReminders().catch(() => null);
-=======
-
-            // Re-sync notifications to include the new schedule
-            syncScheduleNotifications().catch(() => {});
 
 
             Alert.alert('Thành công', 'Tạo lịch uống thuốc thành công', [

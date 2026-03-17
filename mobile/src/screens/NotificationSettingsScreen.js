@@ -44,6 +44,15 @@ const normalizeSettings = (data) => ({
 
 const formatTime = (value) => String(value || "").slice(0, 5);
 
+const RESYNC_FIELDS = new Set([
+  "remind_medicine",
+  "sound",
+  "vibrate",
+  "quiet_hours_enabled",
+  "quiet_start",
+  "quiet_end",
+]);
+
 const SETTING_GROUPS = [
   {
     key: "main",
@@ -186,7 +195,12 @@ export default function NotificationSettingsScreen({ navigation }) {
 
     try {
       const result = await updateNotificationSettings({ [field]: nextValue });
-      setSettings(normalizeSettings(result.data));
+      const nextSettings = normalizeSettings(result.data);
+      setSettings(nextSettings);
+
+      if (RESYNC_FIELDS.has(field)) {
+        await syncMedicationReminders();
+      }
     } catch (error) {
       setSettings(previousSettings);
       setErrorText(error?.message || "Không cập nhật được cài đặt thông báo.");
@@ -204,7 +218,7 @@ export default function NotificationSettingsScreen({ navigation }) {
       const count = await getScheduledMedicationReminderCount();
       Alert.alert(
         "Đồng bộ xong",
-        `Da len lich ${result?.scheduled ?? 0} reminder.\nTong notification dang cho: ${count}.`
+        `Đã lên lịch ${result?.scheduled ?? 0} nhắc nhở.\nTổng thông báo đang chờ: ${count}.`
       );
     } catch (error) {
       setErrorText(error?.message || "Không đồng bộ được lịch nhắc.");

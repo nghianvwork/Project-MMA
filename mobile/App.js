@@ -43,7 +43,6 @@ import {
   setupNotificationListeners,
   cancelAllNotifications,
 } from './src/services/notificationService';
-import { syncScheduleNotifications } from './src/services/scheduleNotificationManager';
 import { savePushToken, removePushToken } from './src/api/notificationApi';
 
 const Tab = createBottomTabNavigator();
@@ -115,8 +114,6 @@ export default function App() {
     });
   }, [session?.token]);
 
-  const handleLogout = () => {
-
   // Setup notification listeners (once, persistent across screens)
   useEffect(() => {
     const cleanup = setupNotificationListeners(navigationRef);
@@ -138,12 +135,20 @@ export default function App() {
         );
       }
 
-      // Schedule local notifications for upcoming medicine times
-      await syncScheduleNotifications();
+      // Schedule local notifications for upcoming medicine times using settings-aware scheduler
+      await syncMedicationReminders();
     } catch (error) {
       console.log('[App] Notification init error:', error.message);
     }
   }, []);
+
+  useEffect(() => {
+    if (!session?.token) {
+      return;
+    }
+
+    initNotifications();
+  }, [session?.token, initNotifications]);
 
   const handleLogout = async () => {
     // Deregister push token on logout
@@ -186,8 +191,6 @@ export default function App() {
           setSession(nextSession || null);
           if (nextSession?.token) {
             setAuthToken(nextSession.token);
-            // Initialize notifications after auth token is set
-            setTimeout(() => initNotifications(), 500);
           }
           setScreen('home');
         }}

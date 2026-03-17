@@ -1,6 +1,5 @@
 import api from './api';
 
-
 const ENDPOINT_MISSING_MESSAGE = 'Backend chưa có route /api/notifications. Hãy restart BE bằng bản code mới.';
 
 const unwrapResponse = (response) => ({
@@ -25,36 +24,32 @@ const normalizeNotificationError = (error) => {
     return error;
 };
 
-export const getNotificationSettings = () => {
-    return api.get('/notifications').then(unwrapResponse).catch((error) => {
-        throw normalizeNotificationError(error);
-    });
-};
-
-export const updateNotificationSettings = (data) => {
-    return api.put('/notifications', data).then(unwrapResponse).catch((error) => {
-        throw normalizeNotificationError(error);
-    });
-
 export const savePushToken = (expo_push_token, device_id, platform) => {
     return api.post('/notifications/push-token', {
         expo_push_token,
         device_id,
         platform,
+    }).then(unwrapResponse).catch((error) => {
+        throw normalizeNotificationError(error);
     });
 };
 
 export const removePushToken = (expo_push_token) => {
     return api.delete('/notifications/push-token', {
         data: { expo_push_token },
+    }).then(unwrapResponse).catch((error) => {
+        throw normalizeNotificationError(error);
     });
 };
 
 export const getNotificationSettings = () => {
-    return api.get('/notifications');
+    return api.get('/notifications').then(unwrapResponse).catch((error) => {
+        throw normalizeNotificationError(error);
+    });
 };
 
 export const updateNotificationSettings = (settings) => {
-    return api.put('/notifications', settings);
-
+    return api.put('/notifications', settings).then(unwrapResponse).catch((error) => {
+        throw normalizeNotificationError(error);
+    });
 };

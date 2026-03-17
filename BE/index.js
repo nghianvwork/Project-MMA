@@ -27,6 +27,19 @@ const medicationLogRoutes = require("./routes/medicationLogRoutes");
 const notificationRoutes = require('./routes/notificationRoutes');
 const { startCronJobs } = require('./services/cronJobs');
 
+const requiredEnvVars = ['JWT_SECRET'];
+const missingRequiredEnvVars = requiredEnvVars.filter(
+  (envVar) => !String(process.env[envVar] || '').trim(),
+);
+
+if (missingRequiredEnvVars.length > 0) {
+  console.error(
+    `❌ Missing required environment variable(s): ${missingRequiredEnvVars.join(', ')}`,
+  );
+  console.error('👉 Add them in your deployment environment settings and redeploy.');
+  process.exit(1);
+}
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -76,6 +89,7 @@ app.get('/health', async (req, res) => {
     res.json({
       status: 'OK',
       database: 'Connected',
+      jwtConfigured: true,
       environment: process.env.NODE_ENV || 'development',
       timestamp: new Date().toISOString()
     });
@@ -84,6 +98,7 @@ app.get('/health', async (req, res) => {
     res.status(500).json({
       status: 'ERROR',
       database: 'Disconnected',
+      jwtConfigured: true,
       error: error.message,
       timestamp: new Date().toISOString()
     });

@@ -13,7 +13,7 @@ import { getLowStockMedicines } from '../api/medicineApi';
 import { toVietnamDateString } from '../utils/dateTime';
 
 import { checkAndNotifyLowStock } from '../services/notificationService';
-import { syncScheduleNotifications } from '../services/scheduleNotificationManager';
+import { syncMedicationReminders } from '../services/medicationReminderService';
 
 
 const HomeScreen = ({ navigation }) => {
@@ -37,8 +37,8 @@ const HomeScreen = ({ navigation }) => {
             // Send local notifications for newly low-stock medicines
             checkAndNotifyLowStock(lowStock).catch(() => {});
 
-            // Re-sync schedule notifications (picks up any new schedules)
-            syncScheduleNotifications().catch(() => {});
+            // Re-sync reminder notifications (settings-aware)
+            syncMedicationReminders().catch(() => {});
         } catch (error) {
             console.log('Error loading home data:', error);
         } finally {

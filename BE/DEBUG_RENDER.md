@@ -12,7 +12,7 @@
 - Import path sai
 
 ### 3. ❌ Environment variables thiếu
-- Thiếu biến DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
+- Thiếu biến DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, JWT_SECRET
 
 ---
 
@@ -46,6 +46,7 @@ DB_PORT=3306
 DB_USER=<your-database-user>
 DB_PASSWORD=<your-database-password>
 DB_NAME=project_mma
+JWT_SECRET=<your-long-random-jwt-secret>
 ```
 
 **⚠️ LỖI THƯỜNG GẶP:**

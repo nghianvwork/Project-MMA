@@ -77,8 +77,7 @@ const ScheduleScreen = ({ navigation }) => {
         }
 
         try {
-
-            const response = await createMedicationLog({
+            await createMedicationLog({
                 schedule_id: schedule.id,
                 medicine_id: schedule.medicine_id,
                 scheduled_time: toSqlDateTime(selectedDate, schedule.time_of_day),
@@ -86,32 +85,13 @@ const ScheduleScreen = ({ navigation }) => {
                 status: 'taken_on_time',
             });
 
-            // Log medication as taken
-            await createMedicationLog({
-                schedule_id: schedule.id,
-                medicine_id: schedule.medicine_id,
-                scheduled_time: schedule.time_of_day || new Date().toISOString(),
-                taken_time: new Date().toISOString(),
-                status: 'taken_on_time',
-            }).catch((err) => console.log('Log failed:', err.message));
-
-
             // Deduct stock
-            if (response.meta?.created !== false && schedule.stock_quantity !== undefined) {
+            if (schedule.stock_quantity !== undefined) {
                 const newQty = Math.max(0, schedule.stock_quantity - (schedule.dose_amount || 1));
                 await updateStock(schedule.medicine_id, newQty).catch(() => { });
             }
-
-
-
             // Cancel this schedule's notification for today
             await cancelScheduleNotification(schedule.id).catch(() => {});
-
-            // Mark as taken locally
-            const newTakenMap = { ...takenMap, [schedule.id]: true };
-            setTakenMap(newTakenMap);
-            await AsyncStorage.setItem(`taken_${selectedDate}`, JSON.stringify(newTakenMap));
-
 
             // Remove from snoozed if it was snoozed
             const newSnoozedMap = { ...snoozedMap };
