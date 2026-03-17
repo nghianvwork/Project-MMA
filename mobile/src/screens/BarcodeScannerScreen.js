@@ -169,7 +169,7 @@ const BarcodeScannerScreen = ({ navigation }) => {
                     {isProcessing && (
                         <View style={styles.loadingRow}>
                             <ActivityIndicator color={COLORS.primary} size="small" />
-                            <Text style={styles.loadingText}>Đang tìm thông tin thuốc...</Text>
+                            <Text style={styles.loadingText}>AI đang tra cứu thông tin thuốc...</Text>
                         </View>
                     )}
                     <TouchableOpacity

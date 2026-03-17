@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
     Alert,
     KeyboardAvoidingView,
     Platform,
@@ -15,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SHADOWS, SIZES } from '../theme/theme';
 import { createMedicine, updateMedicine } from '../api/medicineApi';
+import { suggestMedicineByName } from '../services/geminiMedicineLookupService';
 
 const FORM_OPTIONS = [
     'Viên nén',
@@ -46,9 +48,11 @@ const AddMedicineScreen = ({ navigation, route }) => {
     const [lowStockThreshold, setLowStockThreshold] = useState('5');
     const [showFormPicker, setShowFormPicker] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [aiLoading, setAiLoading] = useState(false);
     const [barcodeLocked, setBarcodeLocked] = useState(false);
     const [scanFeedback, setScanFeedback] = useState('');
     const [scanMatched, setScanMatched] = useState(false);
+    const [scanSource, setScanSource] = useState(null);
 
     useEffect(() => {
         if (!existingMedicine) {
@@ -94,10 +98,14 @@ const AddMedicineScreen = ({ navigation, route }) => {
             setNote(scannedMedicine.note);
         }
 
+        const source = scanMeta?.source || null;
+        setScanSource(source);
         setScanFeedback(
             scanMeta?.matched
-                ? 'Đã tìm thấy thông tin thuốc và điền sẵn biểu mẫu.'
-                : 'Đã lưu mã vạch. Bạn có thể nhập thủ công các trường còn lại.',
+                ? source === 'gemini'
+                    ? 'AI đã gợi ý thông tin thuốc. Vui lòng kiểm tra và chỉnh sửa nếu cần.'
+                    : 'Đã tìm thấy thông tin thuốc và điền sẵn biểu mẫu.'
+                : 'Đã lưu mã vạch. Nhập tên thuốc rồi nhấn "Gợi ý AI" để tự động điền thông tin.',
         );
         setScanMatched(Boolean(scanMeta?.matched));
 
@@ -110,6 +118,28 @@ const AddMedicineScreen = ({ navigation, route }) => {
 
     const handleOpenScanner = () => {
         navigation.navigate('BarcodeScanner');
+    };
+
+    const handleAISuggest = async () => {
+        if (!name.trim()) {
+            return;
+        }
+
+        setAiLoading(true);
+        try {
+            const result = await suggestMedicineByName(name.trim());
+            if (result.name) setName(result.name);
+            if (result.dosage) setDosage(result.dosage);
+            if (result.form) setForm(result.form);
+            if (result.note) setNote(result.note);
+            setScanFeedback('AI đã gợi ý thông tin thuốc. Vui lòng kiểm tra và chỉnh sửa nếu cần.');
+            setScanMatched(true);
+            setScanSource('gemini');
+        } catch (error) {
+            Alert.alert('Không thể gợi ý', 'AI không phản hồi được lúc này. Vui lòng nhập thủ công.');
+        } finally {
+            setAiLoading(false);
+        }
     };
 
     const handleSave = async () => {
@@ -179,7 +209,7 @@ const AddMedicineScreen = ({ navigation, route }) => {
                         <View style={styles.scanTextGroup}>
                             <Text style={styles.scanTitle}>Quét mã vạch thuốc</Text>
                             <Text style={styles.scanSubtitle}>
-                                Quét để điền sẵn mã vạch và tự động điền một số thông tin nếu tìm thấy.
+                                Quét mã vạch, AI sẽ tự động gợi ý thông tin thuốc.
                             </Text>
                         </View>
                         <TouchableOpacity style={styles.scanButton} onPress={handleOpenScanner}>
@@ -190,9 +220,21 @@ const AddMedicineScreen = ({ navigation, route }) => {
                     {scanFeedback ? (
                         <View style={styles.feedbackBox}>
                             <Ionicons
-                                name={scanMatched ? 'checkmark-circle' : 'information-circle'}
+                                name={
+                                    scanMatched && scanSource === 'gemini'
+                                        ? 'bulb'
+                                        : scanMatched
+                                        ? 'checkmark-circle'
+                                        : 'information-circle'
+                                }
                                 size={18}
-                                color={scanMatched ? COLORS.success : COLORS.warning}
+                                color={
+                                    scanMatched && scanSource === 'gemini'
+                                        ? COLORS.primary
+                                        : scanMatched
+                                        ? COLORS.success
+                                        : COLORS.warning
+                                }
                             />
                             <Text style={styles.feedbackText}>{scanFeedback}</Text>
                         </View>
@@ -219,7 +261,24 @@ const AddMedicineScreen = ({ navigation, route }) => {
                     </View>
 
                     <View style={styles.field}>
-                        <Text style={styles.label}>Tên thuốc *</Text>
+                        <View style={styles.fieldHeader}>
+                            <Text style={styles.label}>Tên thuốc *</Text>
+                            <TouchableOpacity
+                                style={[styles.aiButton, (!name.trim() || aiLoading) && styles.aiButtonDisabled]}
+                                onPress={handleAISuggest}
+                                disabled={!name.trim() || aiLoading}
+                                activeOpacity={0.7}
+                            >
+                                {aiLoading ? (
+                                    <ActivityIndicator size="small" color={COLORS.textWhite} />
+                                ) : (
+                                    <>
+                                        <Ionicons name="bulb-outline" size={13} color={COLORS.textWhite} />
+                                        <Text style={styles.aiButtonText}>Gợi ý AI</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        </View>
                         <TextInput
                             style={styles.input}
                             placeholder="VD: Paracetamol"
@@ -440,6 +499,25 @@ const styles = StyleSheet.create({
         paddingHorizontal: SIZES.paddingLG,
         paddingVertical: SIZES.paddingMD,
         marginBottom: SIZES.paddingXL,
+    },
+    aiButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        backgroundColor: COLORS.primary,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: SIZES.radiusFull,
+        minWidth: 80,
+        justifyContent: 'center',
+    },
+    aiButtonDisabled: {
+        opacity: 0.45,
+    },
+    aiButtonText: {
+        fontSize: SIZES.xs,
+        ...FONTS.semibold,
+        color: COLORS.textWhite,
     },
     feedbackText: {
         flex: 1,
