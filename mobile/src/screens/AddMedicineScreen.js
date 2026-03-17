@@ -53,6 +53,7 @@ const AddMedicineScreen = ({ navigation, route }) => {
     const [scanFeedback, setScanFeedback] = useState('');
     const [scanMatched, setScanMatched] = useState(false);
     const [scanSource, setScanSource] = useState(null);
+    const [aiDescription, setAiDescription] = useState('');
 
     useEffect(() => {
         if (!existingMedicine) {
@@ -70,6 +71,8 @@ const AddMedicineScreen = ({ navigation, route }) => {
         setBarcodeLocked(false);
         setScanFeedback('');
         setScanMatched(false);
+        setScanSource(null);
+        setAiDescription('');
     }, [existingMedicine]);
 
     useEffect(() => {
@@ -98,11 +101,17 @@ const AddMedicineScreen = ({ navigation, route }) => {
             setNote(scannedMedicine.note);
         }
 
+        if (scannedMedicine.description) {
+            setAiDescription(scannedMedicine.description);
+        }
+
         const source = scanMeta?.source || null;
         setScanSource(source);
         setScanFeedback(
             scanMeta?.matched
-                ? source === 'gemini'
+                ? source === 'gemini-image'
+                    ? 'AI đã nhận diện thuốc từ ảnh và điền thông tin. Vui lòng kiểm tra trước khi lưu.'
+                    : source === 'gemini'
                     ? 'AI đã gợi ý thông tin thuốc. Vui lòng kiểm tra và chỉnh sửa nếu cần.'
                     : 'Đã tìm thấy thông tin thuốc và điền sẵn biểu mẫu.'
                 : 'Đã lưu mã vạch. Nhập tên thuốc rồi nhấn "Gợi ý AI" để tự động điền thông tin.',
@@ -118,6 +127,10 @@ const AddMedicineScreen = ({ navigation, route }) => {
 
     const handleOpenScanner = () => {
         navigation.navigate('BarcodeScanner');
+    };
+
+    const handleOpenPhotoLookup = () => {
+        navigation.navigate('MedicinePhotoLookup');
     };
 
     const handleAISuggest = async () => {
@@ -212,9 +225,15 @@ const AddMedicineScreen = ({ navigation, route }) => {
                                 Quét mã vạch, AI sẽ tự động gợi ý thông tin thuốc.
                             </Text>
                         </View>
-                        <TouchableOpacity style={styles.scanButton} onPress={handleOpenScanner}>
-                            <Text style={styles.scanButtonText}>{barcode ? 'Quét lại' : 'Bắt đầu'}</Text>
-                        </TouchableOpacity>
+                        <View style={styles.scanActions}>
+                            <TouchableOpacity style={styles.scanButton} onPress={handleOpenScanner}>
+                                <Text style={styles.scanButtonText}>{barcode ? 'Quét lại' : 'Quét mã'}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.photoButton} onPress={handleOpenPhotoLookup}>
+                                <Ionicons name="camera-outline" size={14} color={COLORS.primary} />
+                                <Text style={styles.photoButtonText}>Chụp ảnh</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
                     {scanFeedback ? (
@@ -237,6 +256,16 @@ const AddMedicineScreen = ({ navigation, route }) => {
                                 }
                             />
                             <Text style={styles.feedbackText}>{scanFeedback}</Text>
+                        </View>
+                    ) : null}
+
+                    {aiDescription ? (
+                        <View style={styles.descriptionBox}>
+                            <View style={styles.descriptionHeader}>
+                                <Ionicons name="document-text-outline" size={18} color={COLORS.primaryDark} />
+                                <Text style={styles.descriptionTitle}>Mô tả thuốc từ AI</Text>
+                            </View>
+                            <Text style={styles.descriptionText}>{aiDescription}</Text>
                         </View>
                     ) : null}
 
@@ -483,6 +512,26 @@ const styles = StyleSheet.create({
         paddingHorizontal: SIZES.paddingLG,
         paddingVertical: 10,
     },
+    scanActions: {
+        gap: 8,
+    },
+    photoButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+        borderRadius: SIZES.radiusMD,
+        backgroundColor: COLORS.surface,
+        borderWidth: 1,
+        borderColor: COLORS.primary,
+        paddingHorizontal: SIZES.paddingMD,
+        paddingVertical: 8,
+    },
+    photoButtonText: {
+        fontSize: SIZES.xs,
+        ...FONTS.semibold,
+        color: COLORS.primary,
+    },
     scanButtonText: {
         fontSize: SIZES.sm,
         ...FONTS.semibold,
@@ -524,6 +573,31 @@ const styles = StyleSheet.create({
         fontSize: SIZES.sm,
         color: COLORS.textSecondary,
         lineHeight: 18,
+    },
+    descriptionBox: {
+        backgroundColor: COLORS.surface,
+        borderRadius: SIZES.radiusMD,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        paddingHorizontal: SIZES.paddingLG,
+        paddingVertical: SIZES.paddingMD,
+        marginBottom: SIZES.paddingXL,
+    },
+    descriptionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: 8,
+    },
+    descriptionTitle: {
+        fontSize: SIZES.sm,
+        ...FONTS.bold,
+        color: COLORS.primaryDark,
+    },
+    descriptionText: {
+        fontSize: SIZES.sm,
+        color: COLORS.textSecondary,
+        lineHeight: 19,
     },
     field: {
         marginBottom: SIZES.paddingXL,

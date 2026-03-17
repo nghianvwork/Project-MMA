@@ -29,6 +29,7 @@ import MedicationHistoryScreen from './src/screens/MedicationHistoryScreen';
 import NotificationSettingsScreen from './src/screens/NotificationSettingsScreen';
 import AddMedicineScreen from './src/screens/AddMedicineScreen';
 import BarcodeScannerScreen from './src/screens/BarcodeScannerScreen';
+import MedicinePhotoLookupScreen from './src/screens/MedicinePhotoLookupScreen';
 import AddScheduleScreen from './src/screens/AddScheduleScreen';
 import AlarmScreen from './src/screens/AlarmScreen';
 
@@ -83,6 +84,7 @@ function MedicineStack() {
       <Stack.Screen name="MedicineList" component={MedicineListScreen} />
       <Stack.Screen name="AddMedicine" component={AddMedicineScreen} />
       <Stack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} />
+      <Stack.Screen name="MedicinePhotoLookup" component={MedicinePhotoLookupScreen} />
     </Stack.Navigator>
   );
 }
