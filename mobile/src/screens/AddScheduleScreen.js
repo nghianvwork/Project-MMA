@@ -11,9 +11,11 @@ import { COLORS, FONTS, SIZES, SHADOWS } from '../theme/theme';
 import { createSchedule } from '../api/scheduleApi';
 import { getMedicines } from '../api/medicineApi';
 
+
 import { syncMedicationReminders } from '../services/medicationReminderService';
 import { toVietnamDateString } from '../utils/dateTime';
 
+import { syncScheduleNotifications } from '../services/scheduleNotificationManager';
 
 const RULE_TYPES = [
     { key: 'daily', label: 'Hàng ngày', icon: 'calendar', desc: 'Uống mỗi ngày' },
@@ -58,14 +60,13 @@ const parseDateYMD = (dateStr) => {
     return date;
 };
 
-const AddScheduleScreen = ({ navigation }) => {
+const AddScheduleScreen = ({ navigation, route }) => {
     const [medicines, setMedicines] = useState([]);
     const [selectedMedicine, setSelectedMedicine] = useState(null);
     const [showMedicinePicker, setShowMedicinePicker] = useState(false);
     const [ruleType, setRuleType] = useState('daily');
     const [intervalDays, setIntervalDays] = useState('2');
     const [selectedWeekdays, setSelectedWeekdays] = useState([1, 3, 5]); // Mon, Wed, Fri
-
     const [startDate, setStartDate] = useState(toVietnamDateString());
 
     const [selectedTime, setSelectedTime] = useState(createDefaultTime);
@@ -189,8 +190,12 @@ const AddScheduleScreen = ({ navigation }) => {
 
             await createSchedule(data);
 
+
             await syncMedicationReminders().catch(() => null);
 
+
+            // Re-sync notifications to include the new schedule
+            syncScheduleNotifications().catch(() => {});
 
             Alert.alert('Thành công', 'Tạo lịch uống thuốc thành công', [
                 { text: 'Đóng', onPress: () => navigation.goBack() },
